@@ -1,0 +1,119 @@
+{
+    "name": "community_guard",
+    "version": "1.0.0",
+    "description": "社区守护模组：自动欢迎、关键词过滤、定时提醒",
+    "author": "FI0m9ySans",
+    "dependencies": [],
+    
+    "commands": [
+        {
+            "name": "rules",
+            "description": "📜 查看社区规则 / View community rules / ルール確認 / Règles",
+            "options": [],
+            "action": {
+                "function": "note_list",
+                "args": [{"var": "user_id"}],
+                "response": {
+                    "zh": "📜 **社区规则**\n1. 尊重所有成员\n2. 禁止垃圾广告\n3. 使用对应语言频道\n4. 享受游戏！\n\n违规将被自动处理。",
+                    "en": "📜 **Community Rules**\n1. Respect all members\n2. No spam/advertising\n3. Use correct language channels\n4. Have fun!\n\nViolations will be auto-moderated.",
+                    "ja": "📜 **コミュニティルール**\n1. 全員を尊重する\n2. スパム・広告禁止\n3. 言語チャンネルを使う\n4. 楽しもう！",
+                    "fr": "📜 **Règles**\n1. Respecte tout le monde\n2. Pas de spam\n3. Utilise le bon salon\n4. Amuse-toi !"
+                }
+            }
+        },
+        {
+            "name": "report",
+            "description": "🚨 举报违规用户 / Report a user / 通報 / Signaler",
+            "options": [
+                {
+                    "name": "reason",
+                    "type": "str",
+                    "description": "举报原因 / Reason",
+                    "required": true
+                }
+            ],
+            "action": {
+                "function": "note_create",
+                "args": [
+                    {"var": "user_id"},
+                    "community_guard",
+                    {"var": "reason"},
+                    "举报记录"
+                ],
+                "response": {
+                    "zh": "🚨 举报已记录！管理员会尽快处理。\n原因：{reason}",
+                    "en": "🚨 Report recorded! Admins will review soon.\nReason: {reason}",
+                    "ja": "🚨 通報を記録しました！管理者が確認します。\n理由：{reason}",
+                    "fr": "🚨 Signalement enregistré ! Les admins vont vérifier.\nRaison : {reason}"
+                }
+            }
+        }
+    ],
+    
+    "auto_messages": [
+        {
+            "name": "welcome_tip",
+            "interval": 3600,
+            "channel_id": 1516860607217926316,
+            "message": "💡 **小贴士** | **Tip** | **ヒント** | **Conseil**\n🇨🇳 新成员？使用 `/daily` 签到！\n🇬🇧 New here? Use `/daily` to check in!\n🇯🇵 新規？`/daily` でチェックイン！\n🇫🇷 Nouveau ? Utilise `/daily` !"
+        },
+        {
+            "name": "game_night",
+            "interval": 7200,
+            "channel_id": 1516860607217926316,
+            "message": "🎮 **游戏时间！** | **Game Time!**\n试试这些命令：\n`/rps` - 石头剪刀布\n`/guess` - 猜数字\n`/dice` - 掷骰子\n`/battle` - 伪联机对战\n\nHave fun! 玩得开心！楽しんで！Amuse-toi !"
+        }
+    ],
+    
+    "keyword_reply": [
+        {
+            "keywords": ["傻逼", "垃圾", "废物", "idiot", "stupid", "trash"],
+            "watch_users": [1516859801790054532],
+            "action": "delete_and_dm",
+            "reason": "使用侮辱性语言",
+            "dm_title": "⚠️ 消息已被删除 — 语言违规",
+            "reply": {
+                "zh": "你的消息包含侮辱性词汇，已被删除。请保持友善交流！",
+                "en": "Your message contained insults and was deleted. Please be kind!",
+                "ja": "侮辱的な言葉が含まれていたため、メッセージを削除しました。",
+                "fr": "Ton message contenait des insultes et a été supprimé. Sois gentil !"
+            }
+        },
+        {
+            "keywords": ["广告", "推广", "加群", "qq群", "discord.gg", "advertising", "promo", "join my server"],
+            "watch_users": [1516859801790054532],
+            "action": "delete_and_dm",
+            "reason": "发布广告/推广",
+            "dm_title": "⚠️ 消息已被删除 — 广告违规",
+            "reply": {
+                "zh": "禁止发布广告或推广其他服务器。违规消息已删除。",
+                "en": "Advertising and promoting other servers is not allowed.",
+                "ja": "広告や他サーバーの宣伝は禁止です。",
+                "fr": "La publicité et la promotion d'autres serveurs sont interdites."
+            }
+        },
+        {
+            "keywords": ["色情", "nsfw", "porn", "sex", "18+", "nude"],
+            "watch_users": [],
+            "action": "mute",
+            "duration": 300,
+            "reason": "发布不当内容",
+            "reply": {
+                "zh": "⏱️ 你已被禁言 5 分钟：发布不当内容",
+                "en": "⏱️ You are muted for 5 minutes: inappropriate content",
+                "ja": "⏱️ 不適切なコンテンツのため5分間ミュート",
+                "fr": "⏱️ Muet 5 minutes : contenu inapproprié"
+            }
+        },
+        {
+            "keywords": ["help", "帮助", "怎么", "how to", "教えて", "aide"],
+            "action": "reply",
+            "reply": {
+                "zh": "❓ 需要帮助？\n• `/hello` - 打招呼\n• `/games` - 查看游戏\n• `/balance` - 查看积分\n• `/talents` - 天赋系统\n• 管理员可用 `/clear` 清理消息",
+                "en": "❓ Need help?\n• `/hello` - Say hello\n• `/games` - View games\n• `/balance` - Check points\n• `/talents` - Talent system\n• Admins can use `/clear`",
+                "ja": "❓ ヘルプが必要？\n• `/hello` - 挨拶\n• `/games` - ゲーム一覧\n• `/balance` - ポイント確認\n• `/talents` - 天賦\n• `/clear` でメッセージ削除",
+                "fr": "❓ Besoin d'aide ?\n• `/hello` - Salut\n• `/games` - Jeux\n• `/balance` - Points\n• `/talents` - Talents\n• `/clear` pour modérer"
+            }
+        }
+    ]
+}

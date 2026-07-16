@@ -1,0 +1,229 @@
+{
+  "_comment": "FSBot 扩展模组示例 — 展示全部 15 个新功能",
+  "name": "example_full",
+  "version": "1.0",
+  "description": "展示扩展 SDK 全部功能的示例模组",
+  "currencies": [
+    {
+      "name": "金币",
+      "symbol": "🟡",
+      "description": "冒险者通用货币，可通过每日签到和击杀怪物获得",
+      "earn_methods": [
+        {
+          "type": "command",
+          "command": "/daily",
+          "amount": 50
+        },
+        {
+          "type": "message",
+          "amount": 1,
+          "chance": 0.05
+        }
+      ]
+    },
+    {
+      "name": "钻石",
+      "symbol": "💎",
+      "description": "稀有货币，只能用金币兑换",
+      "earn_methods": [
+        {
+          "type": "exchange",
+          "from_currency": "points",
+          "rate": 100,
+          "note": "100积分兑换1钻石"
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "name": "木剑",
+      "type": "weapon",
+      "description": "新手武器，攻击力+5",
+      "properties": {
+        "damage": 5,
+        "durability": 100,
+        "level_req": 1
+      },
+      "transferable": true
+    },
+    {
+      "name": "魔法面包",
+      "type": "food",
+      "description": "恢复 50 点生命值",
+      "properties": {
+        "heal": 50
+      },
+      "transferable": true
+    },
+    {
+      "name": "神秘宝箱",
+      "type": "box",
+      "description": "打开后随机获得一件物品",
+      "properties": {
+        "contents": [
+          {
+            "item": "木剑",
+            "weight": 50
+          },
+          {
+            "item": "魔法面包",
+            "weight": 30
+          },
+          {
+            "item": "钻石",
+            "weight": 5
+          }
+        ],
+        "unlock_with": null
+      },
+      "transferable": true
+    },
+    {
+      "name": "钥匙",
+      "type": "tool",
+      "description": "用于解锁特定宝箱",
+      "properties": {
+        "used_for": "神秘宝箱"
+      },
+      "transferable": true
+    },
+    {
+      "name": "绑定戒指",
+      "type": "custom",
+      "description": "结婚戒指，绑定后不可转交",
+      "properties": {
+        "effect": "marriage",
+        "partner": null
+      },
+      "transferable": false
+    }
+  ],
+  "shops": [
+    {
+      "name": "冒险者商店",
+      "description": "购买冒险所需物品",
+      "items": [
+        {
+          "item": "木剑",
+          "price": 100,
+          "currency": "points"
+        },
+        {
+          "item": "魔法面包",
+          "price": 20,
+          "currency": "金币"
+        },
+        {
+          "item": "神秘宝箱",
+          "price": 5,
+          "currency": "钻石"
+        }
+      ]
+    }
+  ],
+  "red_packets": [
+    {
+      "name": "新人红包",
+      "description": "新人加入频道时自动发放",
+      "amount": 100,
+      "currency": "points",
+      "quantity": 10
+    }
+  ],
+  "games": [
+    {
+      "name": "guess_coin",
+      "display_name": "猜硬币",
+      "description": "猜正面还是反面，猜对获得双倍",
+      "cost": {
+        "currency": "points",
+        "amount": 10
+      },
+      "reward": {
+        "currency": "points",
+        "amount": 20
+      },
+      "loss_action": "lose"
+    }
+  ],
+  "custom_channels": [
+    {
+      "channel_id": "1516860607217926316",
+      "description": "DISBOARD bump 提醒频道"
+    },
+    {
+      "channel_id": "0",
+      "description": "占位，实际使用时替换为真实频道ID"
+    }
+  ],
+  "custom_roles": [
+    {
+      "role_id": "1517070447173435473",
+      "description": "管理员身份组"
+    },
+    {
+      "role_id": "1517073688632102983",
+      "description": "部分管理员身份组"
+    }
+  ],
+  "commands": [
+    {
+      "name": "check_gold",
+      "description": "查看我的金币余额",
+      "action": {
+        "function": "currency_get_balance",
+        "args": [
+          {
+            "var": "user_id"
+          },
+          1
+        ],
+        "response": {
+          "zh": "你的金币余额：{result} 🟡",
+          "en": "Your gold: {result} 🟡"
+        }
+      }
+    },
+    {
+      "name": "get_starter",
+      "description": "领取新手礼包",
+      "action": {
+        "function": "item_give",
+        "args": [
+          {
+            "var": "user_id"
+          },
+          1,
+          1
+        ],
+        "response": {
+          "zh": "✅ 已领取新手礼包！获得：木剑 x1",
+          "en": "✅ Starter pack claimed!"
+        }
+      }
+    }
+  ],
+  "replies": [
+    {
+      "trigger": "签到",
+      "match": "contains",
+      "response": {
+        "zh": "📅 今日签到已完成！获得 50 🟡 金币！"
+      }
+    },
+    {
+      "trigger": "商店",
+      "match": "contains",
+      "response": {
+        "zh": "🏪 输入 /shop 打开冒险者商店！"
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "example_mod",
+      "type": "optional"
+    }
+  ]
+}

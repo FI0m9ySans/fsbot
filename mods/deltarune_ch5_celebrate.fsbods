@@ -1,0 +1,41 @@
+{
+  "_comment": "Deltarune 第五章庆贺模组 — 2026年6月24日正式发布！",
+  "name": "deltarune_ch5_celebrate",
+  "version": "1.0.0",
+  "description": "庆祝 Deltarune 第五章正式发布！包含主题关键词回复、庆贺命令、角色语录彩蛋。🎉",
+  "author": "FSBot AutoGen",
+  "changelog": "v1.0.0 (2026-06-24): 首版发布，庆祝 Deltarune Chapter 5 上线！",
+
+  "commands": [
+    {
+      "name": "deltarune_celebrate",
+      "description": "庆祝 Deltarune 第五章发布！领取 200 庆贺积分奖励",
+      "action": {
+        "function": "add_points",
+        "args": [
+          {"var": "user_id"},
+          200
+        ],
+        "response": {
+          "zh": "🎉🎭 **谢谢你一起来庆祝 Deltarune 第五章！**\n\n🎁 你获得了 **200 积分** 作为庆贺奖励！（当前积分：{result}）\n\n📅 第五章已于 2026年6月24日 正式发布！\n🎪 快打开游戏，去参加光世界的**周末庆典**吧！\n\n> 「你的选择无关紧要。」\n> 但也许，这一次……\n> **只有你能创造未来。**",
+          "en": "🎉🎭 **Thank you for celebrating Deltarune Chapter 5!**\n\n🎁 You received **200 points**! (Total: {result})\n\n📅 Chapter 5 officially released on June 24, 2026!\n🎪 Go open the game and join the weekend festival!\n\n> \"Your choices don't matter.\"\n> But maybe, this time…\n> **Only you can create the future.**"
+        }
+      }
+    },
+    {
+      "name": "deltarune_trivia",
+      "description": "Deltarune 第五章趣味知识（含剧透，通关后再看！）",
+      "action": {
+        "function": "add_points",
+        "args": [
+          {"var": "user_id"},
+          30
+        ],
+        "response": {
+          "zh": "🎯 **Deltarune 第五章 趣味知识**\n（⚠️ 含剧透，建议通关后再用！）\n\n🥚 被遗忘的男人说周日去**收割麦子** 🌾\n🎪 第五章主题是**周末庆典**\n📺 未使用曲 Sneaking 关联 **Mike 和 Tenna**\n👑 预言壁挂暗示 **Asgore** 是关键人物\n💎 Seam 收集了**五颗**暗影水晶\n\n🎁 获得 **30 积分**！（当前积分：{result}）",
+          "en": "🎯 **Deltarune Chapter 5 Trivia**\n(Spoilers! Play first!)\n\n🥚 Forgotten Man harvests wheat on Sunday 🌾\n🎪 Ch5 theme: Weekend Festival\n📺 Sneaking track → Mike & Tenna\n👑 Prophecy hints Asgore as key figure\n💎 Seam has five Shadow Crystals\n\n🎁 Earned **30 points**! (Total: {result})"
+        }
+      }
+    }
+  ]
+}

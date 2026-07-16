@@ -1,0 +1,30 @@
+# 敏感文件
+token.txt
+.env
+
+# 数据库
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.pyc
+
+# 备份/临时文件
+*_backup*.py
+*_fixed*.py
+fix_*.py
+add_*.py
+insert_*.py
+replace_*.py
+update_*.py
+move_*.py
+*.corrupted_backup
+
+# 日志/输出
+bot_output.txt
+*.log
+
+# 杂项
+nul/

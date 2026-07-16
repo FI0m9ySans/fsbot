@@ -1,0 +1,2 @@
+在此处粘贴你的 Discord Bot Token
+获取地址: https://discord.com/developers/applications → Bot → Token

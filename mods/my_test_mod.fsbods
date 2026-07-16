@@ -1,0 +1,17 @@
+{
+  "name": "my_test_mod",
+  "version": "0.0.1",
+  "description": "null.",
+  "author": "FI0m9ySans",
+  "changelog": "v0.0.1 初版",
+  "commands": [
+    {
+      "name": "hello1",
+      "description": "命令",
+      "response": {
+        "zh": "你好",
+        "en": "hello"
+      }
+    }
+  ]
+}

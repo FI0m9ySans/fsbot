@@ -1,0 +1,1 @@
+# FSBot Cogs Package

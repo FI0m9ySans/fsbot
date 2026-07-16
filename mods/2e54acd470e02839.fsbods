@@ -1,0 +1,129 @@
+{
+  "name": "全能管理模组",
+  "version": "1.2.0",
+  "description": "适配自动注入机制的积分/经验/物品/备注管理工具",
+  "author": "吾乃万水小号",
+  "changelog": "v1.2.0 适配 SDK 自动注入 user_id 和 mod_name，命令更简洁可靠。",
+  "commands": [
+    {
+      "name": "addpoint",
+      "description": "给自己增加指定数量的积分",
+      "options": [
+        {
+          "name": "amount",
+          "type": "integer",
+          "description": "要增加的积分数量",
+          "required": true
+        }
+      ],
+      "action": {
+        "function": "add_points",
+        "args": [
+          "amount"
+        ],
+        "response": "✅ 积分增加成功！本次增加 {amount} 积分。"
+      }
+    },
+    {
+      "name": "removepoint",
+      "description": "给自己扣除指定数量的积分",
+      "options": [
+        {
+          "name": "amount",
+          "type": "integer",
+          "description": "要扣除的积分数量",
+          "required": true
+        }
+      ],
+      "action": {
+        "function": "remove_points",
+        "args": [
+          "amount"
+        ],
+        "response": "⚠️ 积分扣除成功！已扣除 {amount} 积分。"
+      }
+    },
+    {
+      "name": "getpoint",
+      "description": "查询自己的当前积分余额",
+      "action": {
+        "function": "get_points",
+        "args": [],
+        "response": "💰 你的当前积分为：{result} 分。"
+      }
+    },
+    {
+      "name": "addexp",
+      "description": "给自己增加指定数量的经验值",
+      "options": [
+        {
+          "name": "amount",
+          "type": "integer",
+          "description": "要增加的经验数量",
+          "required": true
+        }
+      ],
+      "action": {
+        "function": "add_exp",
+        "args": [
+          "amount"
+        ],
+        "response": "✨ 经验增加成功！本次增加 {amount} 经验。"
+      }
+    },
+    {
+      "name": "giveitem",
+      "description": "给自己发放指定物品",
+      "options": [
+        {
+          "name": "item_id",
+          "type": "str",
+          "description": "物品ID（如 weapon_001）",
+          "required": true
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "description": "物品数量",
+          "required": true
+        }
+      ],
+      "action": {
+        "function": "item_give",
+        "args": [
+          "item_id",
+          "quantity"
+        ],
+        "response": "🎁 物品发放成功！获得 {item_id} x {quantity}。"
+      }
+    },
+    {
+      "name": "createnote",
+      "description": "创建一个系统备注（用于记录日志或存档）",
+      "options": [
+        {
+          "name": "content",
+          "type": "str",
+          "description": "备注内容",
+          "required": true
+        }
+      ],
+      "action": {
+        "function": "note_create",
+        "args": [
+          "content"
+        ],
+        "response": "📝 备注创建成功：{content}"
+      }
+    },
+    {
+      "name": "listnote",
+      "description": "列出所有已创建的备注",
+      "action": {
+        "function": "note_list",
+        "args": [],
+        "response": "📋 备注列表：\n{result}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 FSBot 手柄设置</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0d0d1a;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            padding: 0 0 80px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 { font-size: 1.2em; font-weight: 600; }
+
+        .back-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.15); }
+
+        /* 连接状态横幅 */
+        #connection-banner {
+            margin: 20px 24px 0;
+            background: rgba(26,32,44,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .controller-art {
+            font-size: 3em;
+            line-height: 1;
+        }
+
+        .connection-info h2 { font-size: 1em; margin-bottom: 4px; }
+        .connection-info p { font-size: 0.8em; color: rgba(255,255,255,0.5); }
+
+        .status-badge {
+            margin-left: auto;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .status-badge.connected { background: rgba(72,187,120,0.2); color: #68d391; border: 1px solid #68d391; }
+        .status-badge.disconnected { background: rgba(252,129,74,0.2); color: #fc8164; border: 1px solid #fc8164; }
+
+        /* 输入实时显示 */
+        #live-input-section {
+            margin: 16px 24px 0;
+            background: rgba(26,32,44,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+        }
+
+        .section-title {
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 14px;
+        }
+
+        /* 手柄图示 */
+        .controller-diagram {
+            position: relative;
+            width: 340px;
+            margin: 0 auto;
+        }
+
+        .btn-indicators {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .btn-ind {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 6px 4px;
+            text-align: center;
+            font-size: 0.75em;
+            transition: background 0.08s, border-color 0.08s;
+        }
+        .btn-ind.active {
+            background: rgba(99,179,237,0.25);
+            border-color: #63b3ed;
+            color: #90cdf4;
+        }
+        .btn-ind span { display: block; font-size: 0.9em; opacity: 0.5; }
+
+        .axes-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .axis-pad {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .axis-dot {
+            width: 12px;
+            height: 12px;
+            background: #63b3ed;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.05s;
+            box-shadow: 0 0 6px rgba(99,179,237,0.6);
+        }
+        .axis-label { text-align: center; font-size: 0.75em; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+        .triggers-display {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .trigger-bar-wrap { flex: 1; }
+        .trigger-bar-wrap label { font-size: 0.75em; color: rgba(255,255,255,0.4); }
+        .trigger-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .trigger-fill {
+            height: 100%;
+            background: #63b3ed;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.05s;
+        }
+
+        /* 设置区块 */
+        .settings-section {
+            margin: 16px 24px 0;
+            background: rgba(26,32,44,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .settings-section-header {
+            padding: 14px 20px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #a0aec0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting-row {
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .setting-row:last-child { border-bottom: none; }
+
+        .setting-label { flex: 1; }
+        .setting-label strong { display: block; font-size: 0.9em; }
+        .setting-label small { color: rgba(255,255,255,0.4); font-size: 0.78em; }
+
+        .setting-control { flex-shrink: 0; min-width: 160px; display: flex; align-items: center; gap: 8px; }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 120px;
+            height: 4px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #63b3ed;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .range-value {
+            min-width: 35px;
+            text-align: right;
+            font-size: 0.85em;
+            color: #63b3ed;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            width: 44px;
+            height: 24px;
+            position: relative;
+        }
+        .toggle-track {
+            width: 44px;
+            height: 24px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+        .toggle-track.on { background: #2b6cb0; }
+        .toggle-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: left 0.2s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        }
+        .toggle-track.on + .toggle-thumb { left: 23px; }
+
+        /* 按键映射 */
+        .keymap-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+        .keymap-row {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .keymap-row:nth-child(2n) { border-right: none; }
+        .key-badge {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 5px;
+            padding: 2px 8px;
+            font-size: 0.8em;
+            font-weight: 600;
+            min-width: 40px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .key-arrow { color: rgba(255,255,255,0.3); }
+        .key-action-select {
+            flex: 1;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            color: #e2e8f0;
+            padding: 4px 8px;
+            font-size: 0.82em;
+        }
+        .key-action-select:focus { outline: none; border-color: #63b3ed; }
+
+        /* 震动测试 */
+        .vibration-test-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .vib-test-btn {
+            background: rgba(99,179,237,0.12);
+            border: 1px solid rgba(99,179,237,0.3);
+            border-radius: 8px;
+            color: #90cdf4;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 0.82em;
+            transition: background 0.1s;
+        }
+        .vib-test-btn:hover { background: rgba(99,179,237,0.25); }
+        .vib-test-btn:active { background: rgba(99,179,237,0.4); }
+
+        /* 底部操作栏 */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(13,13,26,0.95);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding: 12px 24px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.1s;
+        }
+        .btn:hover { background: rgba(255,255,255,0.15); }
+        .btn-primary { background: #2b6cb0; border-color: #3182ce; color: #fff; }
+        .btn-primary:hover { background: #3182ce; }
+        .btn-danger { background: rgba(245,101,101,0.15); border-color: rgba(245,101,101,0.4); color: #fc8181; }
+        .btn-danger:hover { background: rgba(245,101,101,0.25); }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-80px);
+            background: #2b6cb0;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            z-index: 9999;
+            transition: transform 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<header>
+    <button class="back-btn" onclick="history.back()">← 返回</button>
+    <h1>🎮 手柄设置</h1>
+</header>
+
+<!-- 连接状态 -->
+<div id="connection-banner">
+    <div class="controller-art">🎮</div>
+    <div class="connection-info">
+        <h2 id="ctrl-name">等待手柄连接...</h2>
+        <p id="ctrl-id">请插入 Xbox 360 手柄（USB）</p>
+    </div>
+    <div id="ctrl-badge" class="status-badge disconnected">未连接</div>
+</div>
+
+<!-- 实时输入显示 -->
+<div id="live-input-section">
+    <div class="section-title">🕹 实时输入状态</div>
+
+    <div class="btn-indicators" id="btn-indicators">
+        <!-- 动态生成 -->
+    </div>
+
+    <div class="axes-display">
+        <div>
+            <div class="axis-pad" id="ls-pad"><div class="axis-dot" id="ls-dot"></div></div>
+            <div class="axis-label">左摇杆 (LS)</div>
+        </div>
+        <div>
+            <div class="axis-pad" id="rs-pad"><div class="axis-dot" id="rs-dot"></div></div>
+            <div class="axis-label">右摇杆 (RS)</div>
+        </div>
+    </div>
+
+    <div class="triggers-display">
+        <div class="trigger-bar-wrap">
+            <label>LT <span id="lt-value">0.00</span></label>
+            <div class="trigger-bar"><div class="trigger-fill" id="lt-fill"></div></div>
+        </div>
+        <div class="trigger-bar-wrap">
+            <label>RT <span id="rt-value">0.00</span></label>
+            <div class="trigger-bar"><div class="trigger-fill" id="rt-fill"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 震动设置 -->
+<div class="settings-section">
+    <div class="settings-section-header">📳 震动设置</div>
+
+    <div class="setting-row">
+        <div class="setting-label">
+            <strong>启用震动</strong>
+            <small>按键操作时提供触觉反馈</small>
+        </div>
+        <div class="setting-control">
+            <button class="toggle-btn" id="vib-toggle" onclick="toggleVibration()">
+                <div class="toggle-track on" id="vib-track"></div>
+                <div class="toggle-thumb" id="vib-thumb"></div>
+            </button>
+        </div>
+    </div>
+
+    <div class="setting-row">
+        <div class="setting-label">
+            <strong>左马达（低频）</strong>
+            <small>强烈振动，碰撞/爆炸感</small>
+        </div>
+        <div class="setting-control">
+            <input type="range" id="vib-left" min="0" max="100" value="50" oninput="updateVibSetting('left', this.value)">
+            <span class="range-value" id="vib-left-val">50%</span>
+        </div>
+    </div>
+
+    <div class="setting-row">
+        <div class="setting-label">
+            <strong>右马达（高频）</strong>
+            <small>细腻振动，按键/选中感</small>
+        </div>
+        <div class="setting-control">
+            <input type="range" id="vib-right" min="0" max="100" value="50" oninput="updateVibSetting('right', this.value)">
+            <span class="range-value" id="vib-right-val">50%</span>
+        </div>
+    </div>
+
+    <div class="setting-row">
+        <div class="setting-label">
+            <strong>震动测试</strong>
+            <small>测试当前震动效果</small>
+        </div>
+        <div class="setting-control">
+            <div class="vibration-test-btns">
+                <button class="vib-test-btn" onclick="testVibration('weak')">轻振</button>
+                <button class="vib-test-btn" onclick="testVibration('medium')">中振</button>
+                <button class="vib-test-btn" onclick="testVibration('strong')">强振</button>
+                <button class="vib-test-btn" onclick="testVibration('double')">双击</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 灵敏度设置 -->
+<div class="settings-section">
+    <div class="settings-section-header">⚡ 灵敏度设置</div>
+
+    <div class="setting-row">
+        <div class="setting-label">
+            <strong>摇杆死区</strong>
+            <small>小于此值的输入被忽略（防误触）</small>
+        </div>
+        <div class="setting-control">
+            <input type="range" id="stick-dead" min="0" max="60" value="25" oninput="updateSensitivity('stick', this.value)">
+            <span class="range-value" id="stick-dead-val">25%</span>
+        </div>
+    </div>
+
+    <div class="setting-row">
+        <div class="setting-label">
+            <strong>导航初始延迟</strong>
+            <small>长按触发重复前的等待时间</small>
+        </div>
+        <div class="setting-control">
+            <input type="range" id="nav-delay" min="100" max="1000" step="50" value="500" oninput="updateSensitivity('navRepeatDelay', this.value)">
+            <span class="range-value" id="nav-delay-val">500ms</span>
+        </div>
+    </div>
+
+    <div class="setting-row">
+        <div class="setting-label">
+            <strong>导航重复速率</strong>
+            <small>长按时每次重复的间隔</small>
+        </div>
+        <div class="setting-control">
+            <input type="range" id="nav-rate" min="50" max="500" step="25" value="150" oninput="updateSensitivity('navRepeatRate', this.value)">
+            <span class="range-value" id="nav-rate-val">150ms</span>
+        </div>
+    </div>
+</div>
+
+<!-- 按键映射 -->
+<div class="settings-section">
+    <div class="settings-section-header">🗺 按键映射</div>
+    <div class="keymap-grid" id="keymap-grid">
+        <!-- 动态生成 -->
+    </div>
+</div>
+
+<!-- 底部操作栏 -->
+<div class="bottom-bar">
+    <button class="btn btn-danger" onclick="resetSettings()">↺ 恢复默认</button>
+    <button class="btn" onclick="history.back()">取消</button>
+    <button class="btn btn-primary" onclick="saveSettings()">✓ 保存设置</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/gamepad-controller.js"></script>
+<script>
+// ─── 常量 ─────────────────────────────────────────────────────────────────────
+const BTN_LABELS = {
+    0:'A', 1:'B', 2:'X', 3:'Y',
+    4:'LB', 5:'RB', 6:'LT', 7:'RT',
+    8:'BACK', 9:'START',
+    10:'LS↓', 11:'RS↓',
+    12:'↑', 13:'↓', 14:'←', 15:'→', 16:'⊙'
+};
+
+const ACTION_OPTIONS = [
+    'confirm','back','up','down','left','right',
+    'prevTab','nextTab','settings','home','action1','action2','—'
+];
+
+const ACTION_LABELS = {
+    confirm:'确认(A)', back:'返回(B)', up:'上移', down:'下移',
+    left:'左移', right:'右移', prevTab:'上一Tab', nextTab:'下一Tab',
+    settings:'手柄设置', home:'主页', action1:'功能1', action2:'功能2', '—':'无'
+};
+
+const KEYMAP_KEYS = ['A','B','X','Y','LB','RB','BACK','START','DPAD_UP','DPAD_DOWN','DPAD_LEFT','DPAD_RIGHT'];
+const KEYMAP_LABELS = {
+    A:'A', B:'B', X:'X', Y:'Y', LB:'LB', RB:'RB',
+    BACK:'BACK', START:'START',
+    DPAD_UP:'↑', DPAD_DOWN:'↓', DPAD_LEFT:'←', DPAD_RIGHT:'→'
+};
+
+// ─── 初始化 ───────────────────────────────────────────────────────────────────
+let gp = window.GamepadController;
+let localSettings = JSON.parse(JSON.stringify(gp.settings));
+
+function init() {
+    buildBtnIndicators();
+    buildKeymapGrid();
+    loadSettingsToUI();
+    startLiveLoop();
+
+    // 监听手柄连接
+    window.addEventListener('gamepadconnected', (e) => {
+        document.getElementById('ctrl-name').textContent = e.gamepad.id.replace(/\s*\(.*?\)\s*/g, '').trim() || 'Xbox 360 Controller';
+        document.getElementById('ctrl-id').textContent = e.gamepad.id;
+        document.getElementById('ctrl-badge').textContent = '已连接';
+        document.getElementById('ctrl-badge').className = 'status-badge connected';
+    });
+
+    window.addEventListener('gamepaddisconnected', () => {
+        _liveLoopLastConnected = false;
+        document.getElementById('ctrl-name').textContent = '等待手柄连接...';
+        document.getElementById('ctrl-id').textContent = '请插入 Xbox 360 手柄（USB）';
+        document.getElementById('ctrl-badge').textContent = '未连接';
+        document.getElementById('ctrl-badge').className = 'status-badge disconnected';
+    });
+
+    // 如果已连接则立即显示
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (const g of gamepads) {
+        if (g) {
+            document.getElementById('ctrl-name').textContent = g.id.replace(/\s*\(.*?\)\s*/g, '').trim() || 'Xbox 360 Controller';
+            document.getElementById('ctrl-id').textContent = g.id;
+            document.getElementById('ctrl-badge').textContent = '已连接';
+            document.getElementById('ctrl-badge').className = 'status-badge connected';
+            _liveLoopLastConnected = true;
+            break;
+        }
+    }
+}
+
+function buildBtnIndicators() {
+    const container = document.getElementById('btn-indicators');
+    container.innerHTML = '';
+    Object.entries(BTN_LABELS).forEach(([idx, label]) => {
+        const el = document.createElement('div');
+        el.className = 'btn-ind';
+        el.id = `btn-ind-${idx}`;
+        el.innerHTML = `<span>${label}</span>`;
+        container.appendChild(el);
+    });
+}
+
+function buildKeymapGrid() {
+    const grid = document.getElementById('keymap-grid');
+    grid.innerHTML = '';
+    KEYMAP_KEYS.forEach(key => {
+        const row = document.createElement('div');
+        row.className = 'keymap-row';
+
+        const badge = document.createElement('span');
+        badge.className = 'key-badge';
+        badge.textContent = KEYMAP_LABELS[key];
+
+        const arrow = document.createElement('span');
+        arrow.className = 'key-arrow';
+        arrow.textContent = '→';
+
+        const select = document.createElement('select');
+        select.className = 'key-action-select';
+        select.id = `keymap-${key}`;
+        ACTION_OPTIONS.forEach(act => {
+            const opt = document.createElement('option');
+            opt.value = act;
+            opt.textContent = ACTION_LABELS[act] || act;
+            if ((localSettings.keymap[key] || '—') === act) opt.selected = true;
+            select.appendChild(opt);
+        });
+        select.addEventListener('change', (e) => {
+            localSettings.keymap[key] = e.target.value === '—' ? null : e.target.value;
+        });
+
+        row.appendChild(badge);
+        row.appendChild(arrow);
+        row.appendChild(select);
+        grid.appendChild(row);
+    });
+}
+
+function loadSettingsToUI() {
+    // 震动
+    document.getElementById('vib-left').value = Math.round(localSettings.vibration.left * 100);
+    document.getElementById('vib-left-val').textContent = Math.round(localSettings.vibration.left * 100) + '%';
+    document.getElementById('vib-right').value = Math.round(localSettings.vibration.right * 100);
+    document.getElementById('vib-right-val').textContent = Math.round(localSettings.vibration.right * 100) + '%';
+    setToggleState('vib-track', 'vib-thumb', localSettings.vibration.enabled);
+
+    // 灵敏度
+    document.getElementById('stick-dead').value = Math.round(localSettings.sensitivity.stick * 100);
+    document.getElementById('stick-dead-val').textContent = Math.round(localSettings.sensitivity.stick * 100) + '%';
+    document.getElementById('nav-delay').value = localSettings.sensitivity.navRepeatDelay;
+    document.getElementById('nav-delay-val').textContent = localSettings.sensitivity.navRepeatDelay + 'ms';
+    document.getElementById('nav-rate').value = localSettings.sensitivity.navRepeatRate;
+    document.getElementById('nav-rate-val').textContent = localSettings.sensitivity.navRepeatRate + 'ms';
+}
+
+// ─── 实时状态轮询 ─────────────────────────────────────────────────────────────
+let _liveLoopLastConnected = false;
+
+function startLiveLoop() {
+    function loop() {
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        const g = gamepads[0];
+        if (g) {
+            // 更新连接状态横幅（处理 gamepadconnected 事件不可靠的情况）
+            if (!_liveLoopLastConnected) {
+                _liveLoopLastConnected = true;
+                const name = (g.id || '').replace(/\s*\(.*?\)\s*/g, '').trim() || 'Xbox 360 Controller';
+                document.getElementById('ctrl-name').textContent = name;
+                document.getElementById('ctrl-id').textContent = g.id;
+                document.getElementById('ctrl-badge').textContent = '已连接';
+                document.getElementById('ctrl-badge').className = 'status-badge connected';
+            }
+
+            // 按钮
+            g.buttons.forEach((btn, idx) => {
+                const el = document.getElementById(`btn-ind-${idx}`);
+                if (el) el.classList.toggle('active', btn.pressed || btn.value > 0.5);
+            });
+
+            // 摇杆
+            updateStick('ls-dot', g.axes[0] || 0, g.axes[1] || 0);
+            updateStick('rs-dot', g.axes[2] || 0, g.axes[3] || 0);
+
+            // 扳机（Xbox 360: axes[2]=LT, axes[3]=RT，范围-1~1，需转成0~1）
+            const ltVal = g.axes.length > 2 ? Math.max(0, (g.axes[2] || 0) * 0.5 + 0.5) : (g.buttons[6]?.value || 0);
+            const rtVal = g.axes.length > 3 ? Math.max(0, (g.axes[3] || 0) * 0.5 + 0.5) : (g.buttons[7]?.value || 0);
+            document.getElementById('lt-value').textContent = ltVal.toFixed(2);
+            document.getElementById('rt-value').textContent = rtVal.toFixed(2);
+            document.getElementById('lt-fill').style.width = (ltVal * 100) + '%';
+            document.getElementById('rt-fill').style.width = (rtVal * 100) + '%';
+        } else {
+            // 手柄断开
+            if (_liveLoopLastConnected) {
+                _liveLoopLastConnected = false;
+                document.getElementById('ctrl-name').textContent = '等待手柄连接...';
+                document.getElementById('ctrl-id').textContent = '请插入 Xbox 360 手柄（USB）';
+                document.getElementById('ctrl-badge').textContent = '未连接';
+                document.getElementById('ctrl-badge').className = 'status-badge disconnected';
+            }
+        }
+        requestAnimationFrame(loop);
+    }
+    loop();
+}
+
+function updateStick(dotId, x, y) {
+    const dot = document.getElementById(dotId);
+    if (!dot) return;
+    const pad = dot.parentElement;
+    const r = pad.offsetWidth / 2 - 8;
+    const px = 50 + x * 40;
+    const py = 50 + y * 40;
+    dot.style.top = py + '%';
+    dot.style.left = px + '%';
+}
+
+// ─── 设置控件处理 ─────────────────────────────────────────────────────────────
+function toggleVibration() {
+    localSettings.vibration.enabled = !localSettings.vibration.enabled;
+    setToggleState('vib-track', 'vib-thumb', localSettings.vibration.enabled);
+}
+
+function setToggleState(trackId, thumbId, on) {
+    document.getElementById(trackId).className = 'toggle-track' + (on ? ' on' : '');
+    // thumb自动跟随track的CSS
+}
+
+function updateVibSetting(side, val) {
+    const pct = parseInt(val);
+    localSettings.vibration[side] = pct / 100;
+    document.getElementById(`vib-${side}-val`).textContent = pct + '%';
+}
+
+function updateSensitivity(key, val) {
+    const num = parseFloat(val);
+    if (key === 'stick') {
+        localSettings.sensitivity.stick = num / 100;
+        document.getElementById('stick-dead-val').textContent = num + '%';
+    } else if (key === 'navRepeatDelay') {
+        localSettings.sensitivity.navRepeatDelay = num;
+        document.getElementById('nav-delay-val').textContent = num + 'ms';
+    } else if (key === 'navRepeatRate') {
+        localSettings.sensitivity.navRepeatRate = num;
+        document.getElementById('nav-rate-val').textContent = num + 'ms';
+    }
+}
+
+// ─── 震动测试 ─────────────────────────────────────────────────────────────────
+function testVibration(type) {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const g = gamepads[0];
+    if (!g || !g.vibrationActuator) { showToast('⚠️ 手柄未连接或不支持震动'); return; }
+
+    const L = localSettings.vibration.left;
+    const R = localSettings.vibration.right;
+
+    const patterns = {
+        weak:   [{ duration: 150, weakMagnitude: R*0.3, strongMagnitude: L*0.2 }],
+        medium: [{ duration: 250, weakMagnitude: R*0.6, strongMagnitude: L*0.5 }],
+        strong: [{ duration: 400, weakMagnitude: R*1.0, strongMagnitude: L*1.0 }],
+        double: [
+            { duration: 100, weakMagnitude: R*0.8, strongMagnitude: L*0.8 },
+            { startDelay: 150, duration: 100, weakMagnitude: R*0.8, strongMagnitude: L*0.8 }
+        ]
+    };
+
+    const pat = patterns[type];
+    if (g.vibrationActuator.playEffect) {
+        // 简单播放第一个
+        g.vibrationActuator.playEffect('dual-rumble', {
+            startDelay: pat[0].startDelay || 0,
+            duration: pat[0].duration,
+            weakMagnitude: pat[0].weakMagnitude,
+            strongMagnitude: pat[0].strongMagnitude
+        });
+        if (type === 'double' && pat[1]) {
+            setTimeout(() => {
+                g.vibrationActuator.playEffect('dual-rumble', {
+                    startDelay: 0,
+                    duration: pat[1].duration,
+                    weakMagnitude: pat[1].weakMagnitude,
+                    strongMagnitude: pat[1].strongMagnitude
+                });
+            }, 150);
+        }
+    }
+}
+
+// ─── 保存/重置 ────────────────────────────────────────────────────────────────
+function saveSettings() {
+    Object.assign(gp.settings, localSettings);
+    gp.saveSettings();
+    showToast('✅ 设置已保存！');
+    // 震动确认
+    testVibration('weak');
+}
+
+function resetSettings() {
+    if (!confirm('恢复所有设置为默认值？')) return;
+    gp.resetSettings();
+    localSettings = JSON.parse(JSON.stringify(gp.settings));
+    loadSettingsToUI();
+    buildKeymapGrid();
+    showToast('↺ 已恢复默认设置');
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "name": "example_mod",
+  "version": "1.0",
+  "description": "示例模组 - 展示所有功能用法",
+
+  "commands": [
+    {
+      "name": "hellomod",
+      "description": "模组打招呼 / Greeting from mod / モッドから挨拶 / Salut du mod",
+      "response": {
+        "zh": "👋 你好！这是来自模组的问候！",
+        "ja": "👋 こんにちは！モッドからのご挨拶！",
+        "fr": "👋 Bonjour ! Message depuis le mod !",
+        "en": "👋 Hello! This message is from a mod!"
+      }
+    },
+    {
+      "name": "modinfo",
+      "description": "Show mod info / 显示模组信息",
+      "response": {
+        "zh": "📦 当前加载了 example_mod v1.0 示例模组！",
+        "en": "📦 example_mod v1.0 is loaded!"
+      }
+    }
+  ],
+
+  "replies": [
+    {
+      "trigger": "!modping",
+      "match": "exact",
+      "response": "🏓 Mod Pong! 模组在线！"
+    },
+    {
+      "trigger": "好无聊",
+      "match": "contains",
+      "response": {
+        "zh": "😄 来玩个小游戏吧！试试 /games 看看有什么好玩的！",
+        "en": "😄 Let's play a game! Try /games to see what's available!"
+      }
+    }
+  ]
+}

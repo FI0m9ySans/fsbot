@@ -1,0 +1,79 @@
+{
+  "name": "test_sdk_full",
+  "version": "1.0",
+  "description": "测试所有 15 个扩展功能",
+  "commands": [
+    {
+      "name": "test_balance",
+      "description": "测试查询余额（动态命令）",
+      "action": {
+        "function": "currency_get_balance",
+        "args": [{"var": "user_id"}, 1],
+        "response": "你的金币余额：{result}"
+      }
+    },
+    {
+      "name": "test_hello",
+      "description": "静态响应测试",
+      "response": {
+        "zh": "你好！这是静态响应测试。",
+        "en": "Hello! This is a static response test."
+      }
+    }
+  ],
+  "currencies": [
+    {
+      "name": "金币",
+      "symbol": "🟡",
+      "description": "测试用金币",
+      "earn_methods": []
+    }
+  ],
+  "items": [
+    {
+      "name": "测试宝箱",
+      "type": "box",
+      "description": "打开后获得随机物品",
+      "properties": {
+        "contents": [
+          {"item": "木剑", "weight": 50},
+          {"item": "面包", "weight": 30}
+        ]
+      },
+      "transferable": true
+    },
+    {
+      "name": "木剑",
+      "type": "weapon",
+      "description": "测试用武器",
+      "properties": {"damage": 10},
+      "transferable": true
+    }
+  ],
+  "shops": [
+    {
+      "name": "测试商店",
+      "description": "用于测试商店功能",
+      "items": [
+        {"item_id": 1, "price": 100, "currency_type": "points"}
+      ]
+    }
+  ],
+  "red_packets": [
+    {
+      "name": "测试红包",
+      "total_amount": 500,
+      "quantity": 5,
+      "description": "测试用红包"
+    }
+  ],
+  "custom_channels": [
+    {"channel_id": 123456789012345678, "description": "测试频道"}
+  ],
+  "custom_roles": [
+    {"role_id": 123456789012345678, "description": "测试身份组"}
+  ],
+  "dependencies": [
+    {"name": "base_mod", "type": "requires"}
+  ]
+}

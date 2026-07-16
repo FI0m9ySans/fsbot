@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSBot Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css?v=2.1.0">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 FSBot Dashboard</h1>
+            <div class="status-bar">
+                <span id="bot-status" class="status-dot"></span>
+                <span id="bot-name">加载中…</span>
+                <span class="sep">|</span>
+                <span id="uptime">—</span>
+                <span class="sep">|</span>
+                <span>Ping: <strong id="ping">—</strong></span>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="overview">📊 概览</button>
+            <button class="tab" data-tab="users">👥 用户</button>
+            <button class="tab" data-tab="leaderboard">🏆 排行榜</button>
+            <button class="tab" data-tab="daily-checkin">🌾 每日签到榜</button>
+            <button class="tab" data-tab="best-luck">🍀 手气最佳</button>
+            <button class="tab" data-tab="mods">🧩 模组</button>
+            <button class="tab" data-tab="guilds">🌐 服务器</button>
+            <button class="tab" data-tab="commands">💻 命令</button>
+            <button class="tab" data-tab="logs">📋 日志</button>
+            <button class="tab" data-tab="sdk-guilds">🏰 公会</button>
+            <button class="tab" data-tab="wiki">📚 Wiki</button>
+            <a href="/mod-editor" target="_blank" class="tab" style="text-decoration:none;color:inherit;">🛠 制作模组</a>
+            <a href="/gamepad-settings" target="_blank" class="tab" style="text-decoration:none;color:inherit;" id="nav-gamepad-btn">🎮 手柄</a>
+        </nav>
+
+        <!-- Overview Tab -->
+        <div class="tab-content active" id="tab-overview">
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-title">📊 Bot 信息</div>
+                    <div class="card-body" id="overview-bot">
+                        <p>加载中…</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🌐 服务器</div>
+                    <div class="card-body" id="overview-guilds">
+                        <p>加载中…</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">👥 用户统计</div>
+                    <div class="card-body" id="overview-users">
+                        <p>加载中…</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🧩 模组</div>
+                    <div class="card-body" id="overview-mods">
+                        <p>加载中…</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div class="tab-content" id="tab-users">
+            <div class="table-controls">
+                <input type="text" id="user-search" placeholder="搜索用户名…" class="search-input">
+                <span id="user-total">共 0 个用户</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用户 ID</th><th>用户名</th><th>永久积分</th><th>月度积分</th><th>经验</th><th>等级</th><th>最后签到</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table">
+                        <tr><td colspan="7" class="loading">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination" id="user-pagination"></div>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div class="tab-content" id="tab-leaderboard">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th><th>用户名</th><th>月度积分</th><th>经验</th><th>等级</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-table">
+                        <tr><td colspan="5" class="loading">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Daily Checkin Ranking Tab (S1 麦收季) -->
+        <div class="tab-content" id="tab-daily-checkin">
+            <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;">
+                <div class="card-title" style="color:#92400e;">🌾 S1 赛季 · 麦收季 — 每日签到排行榜</div>
+                <div class="card-body" style="color:#78350f;">
+                    <p>🕐 <strong>谁今天最早签到？</strong>按签到时间排序，最早签到的排第一。</p>
+                    <p>📌 此榜单仅在 Dashboard 可见，不会发送到 Discord 服务器。</p>
+                    <p id="daily-checkin-date" style="font-size:0.9em;opacity:0.7;">—</p>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th><th>用户名</th><th>签到时间</th><th>用户 ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="daily-checkin-table">
+                        <tr><td colspan="4" class="loading">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Best Luck Ranking Tab (S1 麦收季) -->
+        <div class="tab-content" id="tab-best-luck">
+            <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#fce4ec,#f8bbd0);border:2px solid #e91e63;">
+                <div class="card-title" style="color:#880e4f;">🍀 S1 赛季 · 麦收季 — 手气最佳排行榜</div>
+                <div class="card-body" style="color:#4a0028;">
+                    <p>🧧 <strong>谁抢红包手气最好？</strong>每次抢到红包最高金额的玩家获得一次"手气最佳"记录。</p>
+                    <p>📌 此榜单仅在 Dashboard 可见，不会发送到 Discord 服务器。</p>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th><th>用户名</th><th>手气最佳次数</th><th>用户 ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="best-luck-table">
+                        <tr><td colspan="4" class="loading">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mods Tab -->
+        <div class="tab-content" id="tab-mods">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>模组名</th><th>版本</th><th>作者</th><th>描述</th></tr>
+                    </thead>
+                    <tbody id="mods-table">
+                        <tr><td colspan="4" class="loading">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Guilds Tab -->
+        <div class="tab-content" id="tab-guilds">
+            <div id="guilds-detail-container">
+                <div class="loading">加载中…</div>
+            </div>
+        </div>
+
+        <!-- Commands Tab -->
+        <div class="tab-content" id="tab-commands">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>命令名</th><th>描述</th></tr>
+                    </thead>
+                    <tbody id="commands-table">
+                        <tr><td colspan="2" class="loading">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div class="tab-content" id="tab-logs">
+            <div class="log-container" id="log-container">
+                <div class="loading">加载中…</div>
+            </div>
+        </div>
+    </div>
+
+
+        <!-- SDK 公会 Tab -->
+        <div class="tab-content" id="tab-sdk-guilds">
+            <div class="table-controls">
+                <input type="text" id="guild-search" placeholder="搜索公会名..." class="search-input">
+                <select id="guild-category-filter" class="search-input" style="width:120px;margin-left:8px;">
+                    <option value="">全部分类</option>
+                </select>
+                <span id="guild-total">共 0 个公会</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th><th>公会名</th><th>分类</th><th>等级</th><th>经验</th><th>资金</th><th>会长ID</th><th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sdk-guilds-table">
+                        <tr><td colspan="8" class="loading">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination" id="sdk-guilds-pagination"></div>
+        </div>
+
+        <!-- Wiki Tab -->
+        <div class="tab-content" id="tab-wiki">
+            <div class="table-controls">
+                <input type="text" id="wiki-search" placeholder="搜索标题或内容..." class="search-input">
+                <select id="wiki-category-filter" class="search-input" style="width:120px;margin-left:8px;">
+                    <option value="">全部分类</option>
+                </select>
+                <span id="wiki-total">共 0 个页面</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>标题</th><th>分类</th><th>作者ID</th><th>更新时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wiki-table">
+                        <tr><td colspan="5" class="loading">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination" id="wiki-pagination"></div>
+        </div>
+
+    <script src="/static/dashboard.js?v=2.1.0"></script>
+    <script src="/static/gamepad-controller.js"></script>
+    <script src="/static/gamepad-keyboard.js"></script>
+    <script>
+        // Dashboard 专属手柄绑定
+        // LT + RT 同按：震动确认手柄已连接
+        GamepadController.on('connected', ({ gamepad }) => {
+            const btn = document.getElementById('nav-gamepad-btn');
+            if (btn) btn.style.borderColor = '#68d391';
+        });
+        GamepadController.on('disconnected', () => {
+            const btn = document.getElementById('nav-gamepad-btn');
+            if (btn) btn.style.borderColor = '';
+        });
+    </script>
+</body>
+</html>

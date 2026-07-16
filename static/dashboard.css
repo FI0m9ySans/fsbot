@@ -1,0 +1,438 @@
+/* FSBot Dashboard — Dark Theme */
+:root {
+    --bg: #1a1b2e;
+    --card-bg: #212340;
+    --border: #2a2b4e;
+    --text: #d0d0e8;
+    --text-dim: #7a7b9e;
+    --accent: #5865F2;
+    --accent-hover: #4752c4;
+    --green: #57F287;
+    --yellow: #FEE75C;
+    --red: #ED4245;
+    --table-stripe: #25264a;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+}
+
+header h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-dim);
+}
+
+.status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--yellow);
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+.status-dot.online { background: var(--green); }
+.status-dot.offline { background: var(--red); animation: none; }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.sep { color: var(--border); }
+
+/* Tabs */
+nav.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 4px;
+    border: 1px solid var(--border);
+}
+
+button.tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+button.tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+button.tab.active { background: var(--accent); color: #fff; }
+
+/* Tab Content */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Card Grid */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+}
+
+.card-title {
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-body { font-size: 14px; }
+.card-body p { margin: 6px 0; }
+.card-body strong { color: var(--accent); }
+
+.card .big-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+/* Tables */
+.table-wrap {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.2);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+td {
+    padding: 10px 16px;
+    font-size: 14px;
+    border-top: 1px solid var(--border);
+}
+
+tr:nth-child(even) td { background: var(--table-stripe); }
+tr:hover td { background: rgba(88,101,242,0.08); }
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-dim);
+}
+
+/* Controls */
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.search-input {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    width: 250px;
+    outline: none;
+}
+
+.search-input:focus { border-color: var(--accent); }
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 16px;
+}
+
+.pagination button {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.pagination button:hover { background: var(--accent); border-color: var(--accent); }
+.pagination button.active { background: var(--accent); border-color: var(--accent); }
+.pagination button:disabled { opacity: 0.3; cursor: default; }
+
+/* Logs */
+.log-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 16px;
+    max-height: 500px;
+    overflow-y: auto;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+}
+
+.log-entry {
+    padding: 4px 0;
+    display: flex;
+    gap: 10px;
+}
+
+.log-time { color: var(--text-dim); min-width: 65px; }
+.log-level-info { color: var(--green); }
+.log-level-warn { color: var(--yellow); }
+.log-level-error { color: var(--red); }
+
+/* Badge */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-green { background: rgba(87,242,135,0.15); color: var(--green); }
+.badge-yellow { background: rgba(254,231,92,0.15); color: var(--yellow); }
+.badge-red { background: rgba(237,66,69,0.15); color: var(--red); }
+
+/* Responsive */
+@media (max-width: 768px) {
+    nav.tabs { flex-wrap: wrap; }
+    button.tab { flex: 1 1 30%; font-size: 12px; padding: 8px 10px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .table-wrap { overflow-x: auto; }
+}
+
+/* ═══ Wiki 详情视图 ═══ */
+.wiki-link {
+    color: var(--accent);
+    text-decoration: none;
+    cursor: pointer;
+}
+.wiki-link:hover { text-decoration: underline; }
+
+.wiki-detail {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 24px;
+}
+
+.wiki-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.btn-back {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.btn-back:hover { background: var(--accent); border-color: var(--accent); }
+
+.wiki-detail-title {
+    font-size: 22px;
+    color: var(--text);
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.wiki-ver-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    background: rgba(254,231,92,0.15);
+    color: var(--yellow);
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.wiki-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+.wiki-detail-meta code {
+    color: var(--accent);
+    font-size: 12px;
+}
+
+.wiki-versions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 8px;
+}
+.wiki-ver-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-right: 4px;
+}
+.wiki-ver-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-dim);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+.wiki-ver-btn:hover { color: var(--text); border-color: var(--accent); }
+.wiki-ver-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.wiki-detail-content {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    word-break: break-word;
+    min-height: 100px;
+}
+
+/* ═══ 公会详情视图 ═══ */
+.guild-summary {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.guild-stat {
+    flex: 1;
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 20px;
+    text-align: center;
+}
+
+.guild-stat-num {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.guild-stat-label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
+.guild-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+.guild-icon-placeholder {
+    display: inline-block;
+    width: 28px;
+    text-align: center;
+    margin-right: 2px;
+}
+
+.member-count {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent);
+}
+
+.online-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-size: 11px;
+    background: rgba(87,242,135,0.15);
+    color: var(--green);
+    margin-left: 4px;
+}
+
+.boost-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    background: rgba(254,231,92,0.15);
+    color: var(--yellow);
+}

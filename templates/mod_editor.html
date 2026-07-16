@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FSBot 模组制作工具</title>
+<style>
+:root {
+  --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+  --card: #1e1e3a; --card2: #252545;
+  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+  --text: #e8e8f0; --text2: #9090b0; --text3: #6060a0;
+  --accent: #6c63ff; --accent2: #8b85ff; --accent-bg: rgba(108,99,255,0.15);
+  --green: #4ade80; --green-bg: rgba(74,222,128,0.12);
+  --red: #f87171; --red-bg: rgba(248,113,113,0.12);
+  --orange: #fb923c; --orange-bg: rgba(251,146,60,0.12);
+  --yellow: #fbbf24; --yellow-bg: rgba(251,191,36,0.12);
+  --blue: #60a5fa; --blue-bg: rgba(96,165,250,0.12);
+  --pink: #f472b6; --pink-bg: rgba(244,114,182,0.12);
+  --radius: 10px; --radius-sm: 6px;
+  font-size: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+/* ── Layout ── */
+.app { display: grid; grid-template-columns: 260px 1fr 340px; grid-template-rows: 56px 1fr; height: 100vh; overflow: hidden; }
+.topbar { grid-column: 1/-1; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; padding: 0 20px; }
+.sidebar { background: var(--bg2); border-right: 1px solid var(--border); overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.canvas { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.preview-panel { background: var(--bg2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── Topbar ── */
+.logo { font-size: 18px; font-weight: 700; color: var(--accent2); letter-spacing: -0.5px; }
+.logo span { color: var(--text2); font-weight: 400; font-size: 13px; margin-left: 6px; }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+.btn { padding: 6px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: transparent; color: var(--text); font-size: 13px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn:hover { background: var(--card2); border-color: var(--accent); color: var(--accent2); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+.btn-success { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+.btn-success:hover { background: rgba(74,222,128,0.25); }
+.btn-danger { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: rgba(248,113,113,0.25); }
+
+/* ── Sidebar blocks ── */
+.sidebar-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; padding: 4px 8px; }
+.block-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; cursor: grab; display: flex; align-items: center; gap: 8px; font-size: 13px; transition: all .15s; user-select: none; }
+.block-item:hover { border-color: var(--border2); background: var(--card2); transform: translateY(-1px); }
+.block-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.bi-cmd { background: var(--blue-bg); }
+.bi-kw { background: var(--orange-bg); }
+.bi-auto { background: var(--green-bg); }
+.bi-info { background: var(--accent-bg); }
+.block-name { font-weight: 500; color: var(--text); }
+.block-desc { font-size: 11px; color: var(--text2); margin-top: 1px; }
+
+/* ── Canvas cards ── */
+.mod-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.mod-card.dragging { opacity: .5; border: 1px dashed var(--accent); }
+.mod-card.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+.card-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card2); border-bottom: 1px solid var(--border); cursor: pointer; }
+.card-type-badge { padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+.badge-info { background: var(--accent-bg); color: var(--accent2); }
+.badge-cmd { background: var(--blue-bg); color: var(--blue); }
+.badge-kw { background: var(--orange-bg); color: var(--orange); }
+.badge-auto { background: var(--green-bg); color: var(--green); }
+.card-title-text { font-weight: 500; font-size: 14px; flex: 1; }
+.card-actions { display: flex; gap: 6px; margin-left: auto; }
+.icon-btn { width: 26px; height: 26px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all .12s; }
+.icon-btn:hover { background: var(--card); color: var(--text); border-color: var(--border2); }
+.icon-btn.del:hover { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+.card-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.card-body.collapsed { display: none; }
+
+/* ── Form fields ── */
+.field-row { display: grid; gap: 12px; }
+.field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.field-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+.field-label .optional { color: var(--text3); font-weight: 400; font-size: 10px; text-transform: none; }
+input[type=text], input[type=number], textarea, select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  color: var(--text); padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none;
+  transition: border .12s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+select option { background: var(--bg2); }
+.keyword-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); min-height: 38px; cursor: text; }
+.keyword-tags:focus-within { border-color: var(--accent); }
+.kw-tag { background: var(--orange-bg); border: 1px solid var(--orange); color: var(--orange); padding: 2px 8px; border-radius: 99px; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.kw-tag .rm { cursor: pointer; opacity: .7; }
+.kw-tag .rm:hover { opacity: 1; }
+.kw-input { border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; min-width: 80px; flex: 1; }
+
+/* ── Response langs ── */
+.lang-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.lang-tab { padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text2); transition: all .12s; }
+.lang-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent2); }
+.lang-content { display: none; }
+.lang-content.active { display: block; }
+
+/* ── Options list ── */
+.options-list { display: flex; flex-direction: column; gap: 8px; }
+.option-item { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; display: grid; grid-template-columns: 1fr 1fr 80px 36px; gap: 8px; align-items: center; }
+.add-item-btn { width: 100%; padding: 8px; border: 1px dashed var(--border2); border-radius: var(--radius-sm); background: transparent; color: var(--text2); cursor: pointer; font-size: 13px; transition: all .12s; }
+.add-item-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+/* ── Action block ── */
+.action-block { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+.action-type-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.action-type-btn { padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--text2); font-size: 12px; cursor: pointer; transition: all .12s; }
+.action-type-btn.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+
+/* ── Preview panel ── */
+.preview-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: var(--bg); }
+.preview-header h3 { font-size: 13px; font-weight: 600; flex: 1; }
+.preview-body { flex: 1; overflow-y: auto; padding: 12px; }
+pre#json-output { background: transparent; color: #a0a0c8; font-family: 'Consolas', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+.json-key { color: #79b8ff; }
+.json-str { color: #85e89d; }
+.json-num { color: #f8c555; }
+.json-bool { color: #f97583; }
+.json-null { color: #6a737d; }
+
+/* ── Misc ── */
+.sep-line { height: 1px; background: var(--border); margin: 4px 0; }
+.empty-canvas { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 12px; color: var(--text3); }
+.empty-canvas .big { font-size: 48px; }
+.empty-canvas p { font-size: 14px; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--card); border: 1px solid var(--border2); padding: 10px 20px; border-radius: var(--radius); font-size: 13px; z-index: 1000; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.section-divider { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; display: flex; align-items: center; gap: 8px; }
+.section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Import modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 999; }
+.modal { background: var(--card); border: 1px solid var(--border2); border-radius: var(--radius); padding: 24px; width: 520px; max-width: 90vw; }
+.modal h3 { font-size: 15px; margin-bottom: 16px; }
+.modal textarea { min-height: 220px; font-family: monospace; font-size: 12px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">FSBot <span>模组制作工具 v1.0</span></div>
+    <div class="topbar-actions">
+      <button class="btn" onclick="newMod()">📄 新建空白</button>
+      <button class="btn" onclick="loadLocalFile()">📁 加载本地文件</button>
+      <button class="btn" onclick="importJSON()">📋 粘贴 JSON</button>
+      <button class="btn" onclick="loadExample()">💡 加载示例</button>
+      <button class="btn btn-success" onclick="downloadMod()">⬇️ 下载 .fsbods</button>
+      <a href="/gamepad-settings" target="_blank" class="btn" style="text-decoration:none;color:inherit;" id="mod-gamepad-btn">🎮 手柄</a>
+    </div>
+    <!-- 隐藏的文件输入框 -->
+    <input type="file" id="file-input" accept=".fsbods,.json" style="display:none" onchange="onFileSelected(event)">
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-title">模组信息</div>
+    <div class="block-item" onclick="focusInfoCard()">
+      <div class="block-icon bi-info">📋</div>
+      <div><div class="block-name">基础信息</div><div class="block-desc">名称、版本、作者等</div></div>
+    </div>
+    <div class="sep-line"></div>
+    <div class="sidebar-title">添加模块</div>
+    <div class="block-item" draggable="true" data-type="command" ondragstart="onBlockDrag(event,'command')">
+      <div class="block-icon bi-cmd">⚡</div>
+      <div><div class="block-name">斜杠命令</div><div class="block-desc">添加 /命令</div></div>
+    </div>
+    <div class="block-item" draggable="true" data-type="keyword" ondragstart="onBlockDrag(event,'keyword')">
+      <div class="block-icon bi-kw">🔍</div>
+      <div><div class="block-name">关键词回复</div><div class="block-desc">触发词自动回复</div></div>
+    </div>
+    <div class="block-item" draggable="true" data-type="automsg" ondragstart="onBlockDrag(event,'automsg')">
+      <div class="block-icon bi-auto">⏰</div>
+      <div><div class="block-name">定时消息</div><div class="block-desc">定时自动发送</div></div>
+    </div>
+    <div class="sep-line"></div>
+    <div class="sidebar-title">快捷添加</div>
+    <div class="block-item" onclick="addBlock('command')">
+      <div class="block-icon bi-cmd">⚡</div>
+      <div><div class="block-name">+ 斜杠命令</div></div>
+    </div>
+    <div class="block-item" onclick="addBlock('keyword')">
+      <div class="block-icon bi-kw">🔍</div>
+      <div><div class="block-name">+ 关键词回复</div></div>
+    </div>
+    <div class="block-item" onclick="addBlock('automsg')">
+      <div class="block-icon bi-auto">⏰</div>
+      <div><div class="block-name">+ 定时消息</div></div>
+    </div>
+    <div class="sep-line"></div>
+    <div class="sidebar-title">SDK 函数速查</div>
+    <div style="font-size:11px;color:var(--text2);padding:6px 8px;line-height:1.8;">
+      <code style="color:var(--blue)">add_points</code> — 加积分<br>
+      <code style="color:var(--blue)">remove_points</code> — 减积分<br>
+      <code style="color:var(--blue)">get_points</code> — 查积分<br>
+      <code style="color:var(--blue)">add_exp</code> — 加经验<br>
+      <code style="color:var(--blue)">note_create</code> — 创建备注<br>
+      <code style="color:var(--blue)">note_list</code> — 列出备注<br>
+      <code style="color:var(--blue)">currency_get_balance</code> — 货币余额<br>
+      <code style="color:var(--blue)">item_give</code> — 给予物品
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas" id="canvas" ondragover="event.preventDefault()" ondrop="onCanvasDrop(event)">
+    <!-- Info card (always present) -->
+    <div class="mod-card" id="info-card">
+      <div class="card-header" onclick="toggleCard('info-card')">
+        <span class="card-type-badge badge-info">📋 基础信息</span>
+        <span class="card-title-text" id="info-card-title">未命名模组</span>
+        <div class="card-actions">
+          <button class="icon-btn" title="折叠" onclick="event.stopPropagation();toggleCard('info-card')">⌄</button>
+        </div>
+      </div>
+      <div class="card-body" id="info-card-body">
+        <div class="field-row cols-2">
+          <div>
+            <div class="field-label">模组名称 <span class="optional">英文，无空格</span></div>
+            <input type="text" id="mod-name" placeholder="my_mod" oninput="updateInfoTitle();renderPreview()">
+          </div>
+          <div>
+            <div class="field-label">版本号</div>
+            <input type="text" id="mod-version" placeholder="1.0.0" value="1.0.0" oninput="renderPreview()">
+          </div>
+        </div>
+        <div class="field-row cols-2">
+          <div>
+            <div class="field-label">作者</div>
+            <input type="text" id="mod-author" placeholder="你的名字" oninput="renderPreview()">
+          </div>
+          <div>
+            <div class="field-label">更新日志 <span class="optional">可选</span></div>
+            <input type="text" id="mod-changelog" placeholder="v1.0.0: 初版" oninput="renderPreview()">
+          </div>
+        </div>
+        <div>
+          <div class="field-label">模组描述</div>
+          <textarea id="mod-description" rows="2" placeholder="简单描述这个模组的用途…" oninput="renderPreview()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic blocks -->
+    <div id="blocks-container"></div>
+
+    <div class="empty-canvas" id="empty-hint">
+      <div class="big">🧩</div>
+      <p>从左侧拖入模块，或点击「快捷添加」开始制作</p>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-panel">
+    <div class="preview-header">
+      <h3>📄 JSON 预览</h3>
+      <button class="btn" onclick="copyJSON()" style="padding:4px 10px;font-size:12px;">复制</button>
+    </div>
+    <div class="preview-body">
+      <pre id="json-output"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="import-modal" style="display:none;" onclick="if(event.target===this)closeImport()">
+  <div class="modal">
+    <h3>📂 导入 JSON / .fsbods 内容</h3>
+    <textarea id="import-text" placeholder="粘贴 .fsbods 的 JSON 内容…"></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeImport()">取消</button>
+      <button class="btn btn-primary" onclick="doImport()">导入</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let blocks = [];
+let blockIdCounter = 0;
+const LANGS = ['zh','en','ja','fr'];
+const LANG_LABELS = {zh:'🇨🇳 中文',en:'🇬🇧 English',ja:'🇯🇵 日本語',fr:'🇫🇷 Français'};
+
+// ─── Block Templates ─────────────────────────────────────────────────────────
+function makeBlock(type) {
+  const id = ++blockIdCounter;
+  if (type === 'command') return {
+    id, type, collapsed: false,
+    name:'', description:'', options:[],
+    actionType:'response', actionFunc:'add_points',
+    actionArgs:'[{"var":"user_id"},100]',
+    responses:{zh:'',en:'',ja:'',fr:''}
+  };
+  if (type === 'keyword') return {
+    id, type, collapsed: false,
+    keywords:[], action:'reply', cooldown:300,
+    watchAll:true, responses:{zh:'',en:'',ja:'',fr:''},
+    muteDuration: 60
+  };
+  if (type === 'automsg') return {
+    id, type, collapsed: false,
+    name:'', interval:3600, channelId:'', message:''
+  };
+}
+
+// ─── Render Engine ────────────────────────────────────────────────────────────
+function renderBlocks() {
+  const cont = document.getElementById('blocks-container');
+  cont.innerHTML = '';
+  document.getElementById('empty-hint').style.display = blocks.length === 0 ? 'flex' : 'none';
+  blocks.forEach(b => {
+    const el = document.createElement('div');
+    el.className = 'mod-card';
+    el.dataset.bid = b.id;
+    el.innerHTML = buildCardHTML(b);
+    el.setAttribute('draggable','true');
+    el.addEventListener('dragstart', e => onCardDragStart(e, b.id));
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+    el.addEventListener('drop', e => onCardDrop(e, b.id));
+    cont.appendChild(el);
+    attachLangTabs(b);
+    attachKwInput(b);
+  });
+  renderPreview();
+}
+
+function buildCardHTML(b) {
+  if (b.type === 'command') return buildCommandCard(b);
+  if (b.type === 'keyword') return buildKeywordCard(b);
+  if (b.type === 'automsg') return buildAutoMsgCard(b);
+  return '';
+}
+
+function buildCommandCard(b) {
+  const body = b.collapsed ? 'card-body collapsed' : 'card-body';
+  const optionsHTML = b.options.map((o,i) => `
+    <div class="option-item">
+      <input type="text" value="${esc(o.name)}" placeholder="参数名" oninput="updateOption(${b.id},${i},'name',this.value)">
+      <input type="text" value="${esc(o.description)}" placeholder="参数描述" oninput="updateOption(${b.id},${i},'description',this.value)">
+      <select onchange="updateOption(${b.id},${i},'required',this.value==='true')">
+        <option value="true" ${o.required?'selected':''}>必填</option>
+        <option value="false" ${!o.required?'selected':''}>可选</option>
+      </select>
+      <button class="icon-btn del" onclick="removeOption(${b.id},${i})">✕</button>
+    </div>`).join('');
+  return `
+  <div class="card-header" onclick="toggleCard(${b.id})">
+    <span class="card-type-badge badge-cmd">⚡ 命令</span>
+    <span class="card-title-text">${b.name ? '/' + b.name : '新命令'}</span>
+    <div class="card-actions" onclick="event.stopPropagation()">
+      <button class="icon-btn del" title="删除" onclick="removeBlock(${b.id})">🗑</button>
+    </div>
+  </div>
+  <div class="${body}">
+    <div class="field-row cols-2">
+      <div>
+        <div class="field-label">命令名称 <span class="optional">英文小写</span></div>
+        <input type="text" value="${esc(b.name)}" placeholder="my_command" oninput="updateBlock(${b.id},'name',this.value)">
+      </div>
+      <div>
+        <div class="field-label">命令描述</div>
+        <input type="text" value="${esc(b.description)}" placeholder="命令简介…" oninput="updateBlock(${b.id},'description',this.value)">
+      </div>
+    </div>
+    <div>
+      <div class="field-label">动作类型</div>
+      <div class="action-type-row">
+        <button class="action-type-btn ${b.actionType==='response'?'active':''}" onclick="setActionType(${b.id},'response')">仅回复</button>
+        <button class="action-type-btn ${b.actionType==='sdk'?'active':''}" onclick="setActionType(${b.id},'sdk')">SDK 函数</button>
+      </div>
+      ${b.actionType==='sdk' ? `
+      <div class="action-block">
+        <div class="field-row cols-2" style="margin-bottom:10px">
+          <div>
+            <div class="field-label">SDK 函数</div>
+            <input type="text" value="${esc(b.actionFunc)}" placeholder="add_points" oninput="updateBlock(${b.id},'actionFunc',this.value)">
+          </div>
+          <div>
+            <div class="field-label">参数 JSON <span class="optional">数组</span></div>
+            <input type="text" value="${esc(b.actionArgs)}" placeholder='[{"var":"user_id"},100]' oninput="updateBlock(${b.id},'actionArgs',this.value)">
+          </div>
+        </div>
+        <div class="field-label" style="margin-bottom:6px">回复文本 <span class="optional">可用 {result} 占位</span></div>
+        ${buildLangEditor(b, 'cmd_resp')}
+      </div>` : `
+      <div class="action-block">
+        <div class="field-label" style="margin-bottom:6px">回复文本</div>
+        ${buildLangEditor(b, 'cmd_resp')}
+      </div>`}
+    </div>
+    <div>
+      <div class="field-label">命令参数 <span class="optional">可选</span></div>
+      <div class="options-list" id="opts-${b.id}">${optionsHTML}</div>
+      <button class="add-item-btn" onclick="addOption(${b.id})">+ 添加参数</button>
+    </div>
+  </div>`;
+}
+
+function buildKeywordCard(b) {
+  const body = b.collapsed ? 'card-body collapsed' : 'card-body';
+  const preview = b.keywords.length > 0 ? b.keywords.slice(0,3).map(k=>`<span class="kw-tag">${esc(k)}</span>`).join('') + (b.keywords.length>3?`<span style="color:var(--text2);font-size:12px">+${b.keywords.length-3}</span>`:'') : '无关键词';
+  return `
+  <div class="card-header" onclick="toggleCard(${b.id})">
+    <span class="card-type-badge badge-kw">🔍 关键词</span>
+    <span class="card-title-text" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">${preview}</span>
+    <div class="card-actions" onclick="event.stopPropagation()">
+      <button class="icon-btn del" title="删除" onclick="removeBlock(${b.id})">🗑</button>
+    </div>
+  </div>
+  <div class="${body}">
+    <div>
+      <div class="field-label">触发关键词 <span class="optional">回车或逗号分隔</span></div>
+      <div class="keyword-tags" id="kwtags-${b.id}" onclick="document.getElementById('kwinput-${b.id}').focus()">
+        ${b.keywords.map((k,i)=>`<span class="kw-tag">${esc(k)}<span class="rm" onclick="removeKeyword(${b.id},${i})">×</span></span>`).join('')}
+        <input class="kw-input" id="kwinput-${b.id}" placeholder="输入关键词…">
+      </div>
+    </div>
+    <div class="field-row cols-3">
+      <div>
+        <div class="field-label">触发动作</div>
+        <select onchange="updateBlock(${b.id},'action',this.value);renderBlocks()">
+          <option value="reply" ${b.action==='reply'?'selected':''}>回复消息</option>
+          <option value="warn" ${b.action==='warn'?'selected':''}>警告</option>
+          <option value="mute" ${b.action==='mute'?'selected':''}>禁言</option>
+          <option value="delete_and_dm" ${b.action==='delete_and_dm'?'selected':''}>删消息+私信</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">冷却时间 <span class="optional">秒</span></div>
+        <input type="number" value="${b.cooldown}" min="0" oninput="updateBlock(${b.id},'cooldown',+this.value)">
+      </div>
+      ${b.action==='mute' ? `<div>
+        <div class="field-label">禁言时长 <span class="optional">秒</span></div>
+        <input type="number" value="${b.muteDuration||60}" min="1" oninput="updateBlock(${b.id},'muteDuration',+this.value)">
+      </div>` : '<div></div>'}
+    </div>
+    <div>
+      <div class="field-label">回复/原因文本</div>
+      ${buildLangEditor(b, 'kw_resp')}
+    </div>
+  </div>`;
+}
+
+function buildAutoMsgCard(b) {
+  const body = b.collapsed ? 'card-body collapsed' : 'card-body';
+  return `
+  <div class="card-header" onclick="toggleCard(${b.id})">
+    <span class="card-type-badge badge-auto">⏰ 定时消息</span>
+    <span class="card-title-text">${b.name || '未命名定时消息'} ${b.interval?`<span style="color:var(--text2);font-size:12px">每${formatInterval(b.interval)}</span>`:''}
+    </span>
+    <div class="card-actions" onclick="event.stopPropagation()">
+      <button class="icon-btn del" title="删除" onclick="removeBlock(${b.id})">🗑</button>
+    </div>
+  </div>
+  <div class="${body}">
+    <div class="field-row cols-2">
+      <div>
+        <div class="field-label">任务名称 <span class="optional">英文</span></div>
+        <input type="text" value="${esc(b.name)}" placeholder="welcome_tip" oninput="updateBlock(${b.id},'name',this.value)">
+      </div>
+      <div>
+        <div class="field-label">频道 ID</div>
+        <input type="text" value="${esc(b.channelId)}" placeholder="1516860607217926316" oninput="updateBlock(${b.id},'channelId',this.value)">
+      </div>
+    </div>
+    <div>
+      <div class="field-label">发送间隔</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" value="${b.interval}" min="60" style="width:100px" oninput="updateBlock(${b.id},'interval',+this.value)">
+        <span style="color:var(--text2);font-size:13px">秒 = ${formatInterval(b.interval)}</span>
+        <div style="display:flex;gap:4px;margin-left:8px">
+          ${[[3600,'1h'],[7200,'2h'],[21600,'6h'],[86400,'1d']].map(([s,l])=>`<button class="btn" style="padding:3px 8px;font-size:12px" onclick="updateBlock(${b.id},'interval',${s})">${l}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="field-label">消息内容</div>
+      <textarea rows="4" placeholder="消息内容，支持 Markdown…" oninput="updateBlock(${b.id},'message',this.value)">${esc(b.message)}</textarea>
+    </div>
+  </div>`;
+}
+
+function buildLangEditor(b, editorKey) {
+  const val = b.responses;
+  return `
+  <div class="lang-tabs" id="langtabs-${b.id}-${editorKey}">
+    ${LANGS.map((l,i)=>`<button class="lang-tab ${i===0?'active':''}" onclick="switchLang(${b.id},'${editorKey}','${l}',this)">${LANG_LABELS[l]}</button>`).join('')}
+  </div>
+  ${LANGS.map((l,i)=>`
+  <div class="lang-content ${i===0?'active':''}" id="langcontent-${b.id}-${editorKey}-${l}">
+    <textarea rows="3" placeholder="${l==='zh'?'中文回复…':l==='en'?'English reply…':l==='ja'?'日本語…':'Réponse en français…'}" oninput="updateResponse(${b.id},'${l}',this.value)">${esc(val[l]||'')}</textarea>
+  </div>`).join('')}`;
+}
+
+function attachLangTabs(b) {}
+function attachKwInput(b) {
+  const inp = document.getElementById(`kwinput-${b.id}`);
+  if (!inp) return;
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const v = inp.value.trim().replace(/,$/,'');
+      if (v) { b.keywords.push(v); inp.value = ''; renderBlocks(); }
+    } else if (e.key === 'Backspace' && inp.value === '' && b.keywords.length > 0) {
+      b.keywords.pop(); renderBlocks();
+    }
+  });
+  inp.addEventListener('blur', () => {
+    const v = inp.value.trim().replace(/,$/,'');
+    if (v) { b.keywords.push(v); inp.value = ''; renderBlocks(); }
+  });
+}
+
+// ─── State Updaters ───────────────────────────────────────────────────────────
+function updateBlock(id, key, val) {
+  const b = blocks.find(x=>x.id===id);
+  if (!b) return;
+  b[key] = val;
+  if (key === 'name' || key === 'message' || key === 'interval') {
+    renderBlocks();
+  } else {
+    renderPreview();
+  }
+}
+function updateResponse(id, lang, val) {
+  const b = blocks.find(x=>x.id===id);
+  if (!b) return;
+  b.responses[lang] = val;
+  renderPreview();
+}
+function updateOption(id, idx, key, val) {
+  const b = blocks.find(x=>x.id===id);
+  if (!b) return;
+  b.options[idx][key] = val;
+  renderPreview();
+}
+function addOption(id) {
+  const b = blocks.find(x=>x.id===id);
+  if (!b) return;
+  b.options.push({name:'',description:'',required:true,type:'str'});
+  renderBlocks();
+}
+function removeOption(id, idx) {
+  const b = blocks.find(x=>x.id===id);
+  if (!b) return;
+  b.options.splice(idx,1);
+  renderBlocks();
+}
+function removeKeyword(id, idx) {
+  const b = blocks.find(x=>x.id===id);
+  if (!b) return;
+  b.keywords.splice(idx,1);
+  renderBlocks();
+}
+function setActionType(id, t) {
+  const b = blocks.find(x=>x.id===id);
+  if (!b) return;
+  b.actionType = t;
+  renderBlocks();
+}
+function toggleCard(idOrEl) {
+  if (typeof idOrEl === 'number') {
+    const b = blocks.find(x=>x.id===idOrEl);
+    if (!b) return;
+    b.collapsed = !b.collapsed;
+    renderBlocks();
+  } else {
+    const body = document.getElementById(idOrEl + '-body');
+    if (body) body.classList.toggle('collapsed');
+  }
+}
+function focusInfoCard() {
+  document.getElementById('info-card').scrollIntoView({behavior:'smooth'});
+  document.getElementById('mod-name').focus();
+}
+function switchLang(bid, editorKey, lang, btn) {
+  const tabsEl = document.getElementById(`langtabs-${bid}-${editorKey}`);
+  if (!tabsEl) return;
+  tabsEl.querySelectorAll('.lang-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  LANGS.forEach(l => {
+    const el = document.getElementById(`langcontent-${bid}-${editorKey}-${l}`);
+    if (el) el.classList.toggle('active', l===lang);
+  });
+}
+
+// ─── Block Add / Remove ───────────────────────────────────────────────────────
+function addBlock(type) {
+  blocks.push(makeBlock(type));
+  renderBlocks();
+}
+function removeBlock(id) {
+  blocks = blocks.filter(b=>b.id!==id);
+  renderBlocks();
+}
+
+// ─── Drag & Drop ─────────────────────────────────────────────────────────────
+let dragSidebarType = null;
+let dragCardId = null;
+function onBlockDrag(e, type) { dragSidebarType = type; dragCardId = null; }
+function onCanvasDrop(e) {
+  e.preventDefault();
+  if (dragSidebarType) { addBlock(dragSidebarType); dragSidebarType = null; }
+}
+function onCardDragStart(e, id) { dragCardId = id; dragSidebarType = null; }
+function onCardDrop(e, targetId) {
+  e.preventDefault();
+  document.querySelectorAll('.mod-card').forEach(el=>el.classList.remove('drag-over'));
+  if (dragCardId === null || dragCardId === targetId) return;
+  const fi = blocks.findIndex(b=>b.id===dragCardId);
+  const ti = blocks.findIndex(b=>b.id===targetId);
+  if (fi < 0 || ti < 0) return;
+  const [moved] = blocks.splice(fi,1);
+  blocks.splice(ti,0,moved);
+  dragCardId = null;
+  renderBlocks();
+}
+
+// ─── JSON Builder ─────────────────────────────────────────────────────────────
+function buildJSON() {
+  const name = document.getElementById('mod-name').value.trim();
+  const version = document.getElementById('mod-version').value.trim() || '1.0.0';
+  const author = document.getElementById('mod-author').value.trim();
+  const description = document.getElementById('mod-description').value.trim();
+  const changelog = document.getElementById('mod-changelog').value.trim();
+  const obj = { name: name||'unnamed_mod', version };
+  if (description) obj.description = description;
+  if (author) obj.author = author;
+  if (changelog) obj.changelog = changelog;
+
+  const commands = [];
+  const keyword_reply = [];
+  const auto_messages = [];
+
+  for (const b of blocks) {
+    if (b.type === 'command') {
+      const cmd = { name: b.name||'unnamed', description: b.description||'命令' };
+      if (b.options.length > 0) cmd.options = b.options.map(o=>({name:o.name,type:o.type||'str',description:o.description,required:o.required}));
+      const resp = buildResponses(b.responses);
+      if (b.actionType === 'sdk') {
+        let args;
+        try { args = JSON.parse(b.actionArgs || '[]'); } catch(e) { args = []; }
+        cmd.action = { function: b.actionFunc||'add_points', args, response: resp };
+      } else {
+        cmd.response = resp;
+      }
+      commands.push(cmd);
+    } else if (b.type === 'keyword') {
+      const rule = { keywords: b.keywords };
+      if (b.cooldown && b.cooldown !== 300) rule.cooldown = b.cooldown;
+      rule.action = b.action;
+      if (b.action === 'mute') rule.duration = b.muteDuration||60;
+      const resp = buildResponses(b.responses);
+      if (resp) rule.reply = resp;
+      keyword_reply.push(rule);
+    } else if (b.type === 'automsg') {
+      auto_messages.push({
+        name: b.name||'auto_msg',
+        interval: b.interval||3600,
+        channel_id: b.channelId ? +b.channelId : 0,
+        message: b.message
+      });
+    }
+  }
+
+  if (commands.length > 0) obj.commands = commands;
+  if (keyword_reply.length > 0) obj.keyword_reply = keyword_reply;
+  if (auto_messages.length > 0) obj.auto_messages = auto_messages;
+  return obj;
+}
+
+function buildResponses(r) {
+  const keys = LANGS.filter(l=>r[l]&&r[l].trim());
+  if (keys.length === 0) return '';
+  if (keys.length === 1 && keys[0]==='zh') return r.zh;
+  const obj = {};
+  keys.forEach(l => obj[l] = r[l]);
+  return obj;
+}
+
+// ─── Preview ──────────────────────────────────────────────────────────────────
+function renderPreview() {
+  const obj = buildJSON();
+  const str = JSON.stringify(obj, null, 2);
+  document.getElementById('json-output').innerHTML = colorizeJSON(str);
+  updateInfoTitle();
+}
+
+function colorizeJSON(str) {
+  return str
+    .replace(/("(?:[^"\\]|\\.)*?")\s*:/g, '<span class="json-key">$1</span>:')
+    .replace(/:\s*("(?:[^"\\]|\\.)*?")/g, ': <span class="json-str">$1</span>')
+    .replace(/:\s*(-?\d+(?:\.\d+)?)/g, ': <span class="json-num">$1</span>')
+    .replace(/:\s*(true|false)/g, ': <span class="json-bool">$1</span>')
+    .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>');
+}
+
+function updateInfoTitle() {
+  const n = document.getElementById('mod-name').value.trim();
+  document.getElementById('info-card-title').textContent = n || '未命名模组';
+}
+
+// ─── Import / Export ─────────────────────────────────────────────────────────
+function downloadMod() {
+  const obj = buildJSON();
+  const str = JSON.stringify(obj, null, 2);
+  const name = obj.name || 'my_mod';
+  const blob = new Blob([str], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name + '.fsbods';
+  a.click();
+  toast(`已下载 ${name}.fsbods`);
+}
+
+function copyJSON() {
+  const obj = buildJSON();
+  navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
+  toast('已复制到剪贴板！');
+}
+
+function importJSON() {
+  document.getElementById('import-modal').style.display = 'flex';
+  document.getElementById('import-text').value = '';
+  setTimeout(()=>document.getElementById('import-text').focus(),100);
+}
+function closeImport() {
+  document.getElementById('import-modal').style.display = 'none';
+}
+function doImport() {
+  try {
+    const raw = document.getElementById('import-text').value.trim();
+    const obj = JSON.parse(raw);
+    loadFromObject(obj);
+    closeImport();
+    toast('导入成功！');
+  } catch(e) {
+    alert('JSON 解析失败：' + e.message);
+  }
+}
+
+function loadFromObject(obj) {
+  document.getElementById('mod-name').value = obj.name || '';
+  document.getElementById('mod-version').value = obj.version || '1.0.0';
+  document.getElementById('mod-author').value = obj.author || '';
+  document.getElementById('mod-description').value = obj.description || '';
+  document.getElementById('mod-changelog').value = obj.changelog || '';
+  blocks = [];
+  blockIdCounter = 0;
+
+  (obj.commands||[]).forEach(cmd => {
+    const b = makeBlock('command');
+    b.name = cmd.name||'';
+    b.description = cmd.description||'';
+    b.options = (cmd.options||[]).map(o=>({name:o.name||'',description:o.description||'',required:!!o.required,type:o.type||'str'}));
+    if (cmd.action) {
+      b.actionType = 'sdk';
+      b.actionFunc = cmd.action.function||'';
+      b.actionArgs = JSON.stringify(cmd.action.args||[]);
+      b.responses = parseLangResp(cmd.action.response||cmd.response||'');
+    } else {
+      b.actionType = 'response';
+      b.responses = parseLangResp(cmd.response||'');
+    }
+    blocks.push(b);
+  });
+
+  (obj.keyword_reply||[]).forEach(rule => {
+    const b = makeBlock('keyword');
+    b.keywords = rule.keywords||[];
+    b.action = rule.action||'reply';
+    b.cooldown = rule.cooldown||300;
+    b.muteDuration = rule.duration||60;
+    b.responses = parseLangResp(rule.reply||'');
+    blocks.push(b);
+  });
+
+  (obj.auto_messages||[]).forEach(am => {
+    const b = makeBlock('automsg');
+    b.name = am.name||'';
+    b.interval = am.interval||3600;
+    b.channelId = am.channel_id ? String(am.channel_id) : '';
+    b.message = am.message||'';
+    blocks.push(b);
+  });
+
+  renderBlocks();
+  renderPreview();
+}
+
+function parseLangResp(r) {
+  const base = {zh:'',en:'',ja:'',fr:''};
+  if (!r) return base;
+  if (typeof r === 'string') { base.zh = r; return base; }
+  if (typeof r === 'object') { LANGS.forEach(l => { if (r[l]) base[l] = r[l]; }); }
+  return base;
+}
+
+// ─── 新建空白模组 ─────────────────────────────────────────────────────────────
+function newMod() {
+  if (blocks.length > 0 || document.getElementById('mod-name').value.trim()) {
+    if (!confirm('⚠️ 当前内容将被清空，确定新建吗？')) return;
+  }
+  // 清空基础信息
+  document.getElementById('mod-name').value = '';
+  document.getElementById('mod-version').value = '1.0.0';
+  document.getElementById('mod-author').value = '';
+  document.getElementById('mod-description').value = '';
+  document.getElementById('mod-changelog').value = '';
+  // 清空模块
+  blocks = [];
+  blockIdCounter = 0;
+  renderBlocks();
+  renderPreview();
+  // 展开信息卡并聚焦到模组名
+  const infoBody = document.getElementById('info-card-body');
+  if (infoBody) infoBody.classList.remove('collapsed');
+  setTimeout(() => document.getElementById('mod-name').focus(), 50);
+  toast('✨ 已新建空白模组');
+}
+
+// ─── 加载本地 .fsbods 文件 ────────────────────────────────────────────────────
+function loadLocalFile() {
+  document.getElementById('file-input').value = '';  // 允许重复选同一文件
+  document.getElementById('file-input').click();
+}
+
+function onFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const obj = JSON.parse(e.target.result);
+      if (blocks.length > 0 || document.getElementById('mod-name').value.trim()) {
+        if (!confirm(`⚠️ 将加载「${file.name}」并替换当前内容，确定吗？`)) return;
+      }
+      loadFromObject(obj);
+      toast(`✅ 已加载 ${file.name}`);
+    } catch(err) {
+      alert(`❌ 解析失败：${file.name}\n\n${err.message}`);
+    }
+  };
+  reader.onerror = function() {
+    alert(`❌ 文件读取失败：${file.name}`);
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function loadExample() {
+  const example = {
+    name:'my_first_mod', version:'1.0.0', description:'我的第一个 FSBot 模组！',
+    author:'你的名字', changelog:'v1.0.0: 初版',
+    commands:[{
+      name:'hello',description:'打招呼命令',
+      action:{function:'add_points',args:[{'var':'user_id'},10],
+        response:{zh:'👋 你好！获得了 10 积分！当前积分：{result}',en:'👋 Hello! Got 10 points! Total: {result}'}}
+    },{
+      name:'info',description:'查看模组信息',
+      response:{zh:'📦 这是 my_first_mod v1.0.0！',en:'📦 This is my_first_mod v1.0.0!'}
+    }],
+    keyword_reply:[{
+      keywords:['早','早上好','good morning'],action:'reply',cooldown:600,
+      reply:{zh:'🌅 早上好！记得用 /daily 签到哦~',en:'🌅 Good morning! Remember to /daily check in!'}
+    }],
+    auto_messages:[{
+      name:'daily_tip',interval:86400,channel_id:0,
+      message:'💡 今日小贴士：使用 /daily 每天签到可以获取积分！'
+    }]
+  };
+  loadFromObject(example);
+  toast('示例已加载！');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatInterval(s) {
+  s = +s;
+  if (s < 60) return s + ' 秒';
+  if (s < 3600) return (s/60|0) + ' 分钟';
+  if (s < 86400) return (s/3600|0) + ' 小时';
+  return (s/86400|0) + ' 天';
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderBlocks();
+renderPreview();
+document.getElementById('mod-name').addEventListener('input', renderPreview);
+document.getElementById('mod-version').addEventListener('input', renderPreview);
+document.getElementById('mod-author').addEventListener('input', renderPreview);
+document.getElementById('mod-description').addEventListener('input', renderPreview);
+document.getElementById('mod-changelog').addEventListener('input', renderPreview);
+</script>
+<script src="/static/gamepad-controller.js"></script>
+<script src="/static/gamepad-keyboard.js"></script>
+<script>
+// 模组编辑器手柄适配
+// X键 = 添加新模块（弹出选择）
+// Y键 = 切换 JSON 预览展开/收起
+GamepadController.on('action', ({ name }) => {
+    if (name === 'action1') {
+        // X键：添加命令模块
+        addBlock('command');
+        toast('🎮 X: 已添加命令模块');
+    } else if (name === 'action2') {
+        // Y键：添加关键词回复模块
+        addBlock('keyword_reply');
+        toast('🎮 Y: 已添加关键词回复');
+    }
+});
+GamepadController.on('connected', () => {
+    const btn = document.getElementById('mod-gamepad-btn');
+    if (btn) btn.style.borderColor = '#68d391';
+    toast('🎮 手柄已连接！LB/RB切换块 · A确认 · B退格 · X添命令 · Y添关键词');
+});
+GamepadController.on('disconnected', () => {
+    const btn = document.getElementById('mod-gamepad-btn');
+    if (btn) btn.style.borderColor = '';
+});
+</script>
+</body>
+</html>
