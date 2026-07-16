@@ -1,0 +1,84 @@
+{
+  "name": "mini_shop",
+  "version": "1.0",
+  "description": "迷你商店模组：演示自定义货币、物品、商店与基本指令",
+
+  "currencies": [
+    {
+      "name": "Gold",
+      "symbol": "💰",
+      "description": "模组内的金币，用于购买物品",
+      "earn_methods": [
+        {"type": "command", "command": "daily", "amount": 50},
+        {"type": "message", "amount": 1, "chance": 0.05}
+      ]
+    }
+  ],
+
+  "items": [
+    {
+      "name": "Health Potion",
+      "type": "consumable",
+      "description": "恢复少量积分（示例）",
+      "properties": {"effect": "points", "amount": 20, "consumable": true},
+      "transferable": true
+    },
+    {
+      "name": "Fancy Hat",
+      "type": "equipment",
+      "description": "一顶好看的帽子（不可交易）",
+      "properties": {"effect": "equip", "attack": 0, "defense": 1},
+      "transferable": false
+    }
+  ],
+
+  "shops": [
+    {
+      "name": "Mini Shop",
+      "description": "小商店：使用 Gold 购买物品",
+      "items": [
+        {"item_id": 1, "price": 30, "currency_type": "currency", "currency_id": 1},
+        {"item_id": 2, "price": 100, "currency_type": "currency", "currency_id": 1}
+      ]
+    }
+  ],
+
+  "commands": [
+    {
+      "name": "shop",
+      "description": "查看商店商品列表",
+      "response": {
+        "zh": "💠 使用 /shop list 查看商品；/shop buy <商品ID> <数量> 购买。",
+        "en": "💠 Use /shop list to view items; /shop buy <item_id> <qty> to purchase."
+      }
+    },
+    {
+      "name": "balance",
+      "description": "查看你的 Gold 余额",
+      "response": {
+        "zh": "💰 使用 /balance 可查看你的 Gold。",
+        "en": "💰 Use /balance to check your Gold."
+      }
+    }
+  ],
+
+  "replies": [
+    {
+      "trigger": "\\shop",
+      "match": "exact",
+      "response": {"zh": "💠 使用 /shop list 查看商品；/shop buy <商品ID> <数量> 购买。", "en": "💠 Use /shop list to view items; /shop buy <item_id> <qty> to purchase."}
+    },
+    {
+      "trigger": "\\balance",
+      "match": "exact",
+      "response": {"zh": "💰 使用 /balance 可查看你的 Gold。", "en": "💰 Use /balance to check your Gold."}
+    },
+    {
+      "trigger": "买东西",
+      "match": "contains",
+      "response": {"zh": "想买什么？试试 /shop list 然后 /shop buy <商品ID> <数量>", "en": "Want to buy? Try /shop list then /shop buy <item_id> <qty>."}
+    }
+  ],
+
+  "dependencies": []
+}
