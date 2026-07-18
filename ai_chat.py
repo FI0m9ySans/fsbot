@@ -11,6 +11,7 @@ import aiohttp
 import json
 import os
 import sqlite3
+import datetime
 
 # ── 智谱AI 配置 ──
 ZHIPU_API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
@@ -20,8 +21,10 @@ ZHIPU_API_KEY = ""
 # ── 运行时状态 ──
 _system_context: str = ""          # 系统提示词 (启动后构建一次)
 _conversations: dict = {}          # {user_id: [{"role":..., "content":...}, ...]}
+_stats: dict = {}                  # {user_id: {"turns", "prompt_tokens", "completion_tokens", "total_tokens", "first_used", "last_used"}}
 _initialized: bool = False
 MAX_HISTORY = 20                   # 每用户最多保留 20 轮对话 (不含 system)
+MAX_RETRIES = 3                    # API 调用最大重试次数
 
 def _load_api_key():
     """从 ai_key.txt 读取 API Key"""
@@ -159,8 +162,65 @@ def _trim_conversation(user_id: int):
     _conversations[user_id] = system_msgs + other_msgs
 
 
-async def _call_zhipu_api(messages: list) -> str:
-    """调用智谱AI API, 返回回复文本"""
+async def _get_dynamic_context(message, bot) -> str:
+    """获取动态上下文: 当前频道名 + 最近消息摘要 (每次调用时生成)"""
+    lines = []
+    lines.append("=== 当前上下文 ===")
+    guild_name = message.guild.name if message.guild else "私聊"
+    channel_name = getattr(message.channel, "name", "DM")
+    lines.append(f"服务器: {guild_name}")
+    lines.append(f"频道: #{channel_name}")
+
+    # 最近几条消息摘要 (排除当前 .aichat 消息和 bot 消息)
+    try:
+        recent = []
+        async for msg in message.channel.history(limit=6, before=message):
+            if msg.author.bot:
+                continue
+            text = msg.content.strip()
+            if not text:
+                continue
+            author = msg.author.display_name
+            if len(text) > 100:
+                text = text[:100] + "..."
+            recent.append(f"{author}: {text}")
+        if recent:
+            lines.append("最近对话 (从新到旧):")
+            for r in recent[:5]:
+                lines.append(f"  {r}")
+    except Exception:
+        pass  # 无权限读历史等，静默跳过
+
+    return "\n".join(lines)
+
+
+def _update_stats(user_id: int, usage: dict):
+    """更新用户统计"""
+    if user_id not in _stats:
+        _stats[user_id] = {
+            "turns": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "first_used": "",
+            "last_used": "",
+        }
+    s = _stats[user_id]
+    s["turns"] += 1
+    s["prompt_tokens"] += usage.get("prompt_tokens", 0)
+    s["completion_tokens"] += usage.get("completion_tokens", 0)
+    s["total_tokens"] += usage.get("total_tokens", 0)
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    if not s["first_used"]:
+        s["first_used"] = now
+    s["last_used"] = now
+
+
+async def _call_zhipu_api(messages: list) -> tuple:
+    """
+    调用智谱AI API, 返回 (回复文本, usage统计)
+    遇到 429/5xx/超时/网络错误时自动指数退避重试
+    """
     headers = {
         "Authorization": f"Bearer {ZHIPU_API_KEY}",
         "Content-Type": "application/json",
@@ -172,14 +232,47 @@ async def _call_zhipu_api(messages: list) -> str:
         "max_tokens": 1024,
     }
 
-    timeout = aiohttp.ClientTimeout(total=30)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(ZHIPU_API_URL, headers=headers, json=payload) as resp:
-            if resp.status != 200:
-                error_text = await resp.text()
-                raise Exception(f"API 返回 {resp.status}: {error_text[:200]}")
-            data = await resp.json()
-            return data["choices"][0]["message"]["content"]
+    last_error = None
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            timeout = aiohttp.ClientTimeout(total=30)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(ZHIPU_API_URL, headers=headers, json=payload) as resp:
+                    if resp.status == 429 or resp.status >= 500:
+                        # 可重试错误 (限流 / 服务器内部错误)
+                        error_text = await resp.text()
+                        last_error = Exception(f"API 返回 {resp.status}: {error_text[:200]}")
+                        if attempt < MAX_RETRIES:
+                            wait = 2 ** attempt  # 1s, 2s, 4s
+                            print(f"[AIChat] API {resp.status}, 第 {attempt+1} 次重试 (等待 {wait}s)")
+                            await asyncio.sleep(wait)
+                            continue
+                        raise last_error
+                    if resp.status != 200:
+                        error_text = await resp.text()
+                        raise Exception(f"API 返回 {resp.status}: {error_text[:200]}")
+                    data = await resp.json()
+                    reply = data["choices"][0]["message"]["content"]
+                    usage = data.get("usage", {})
+                    return reply, usage
+        except asyncio.TimeoutError:
+            last_error = asyncio.TimeoutError("API 请求超时")
+            if attempt < MAX_RETRIES:
+                wait = 2 ** attempt
+                print(f"[AIChat] 超时, 第 {attempt+1} 次重试 (等待 {wait}s)")
+                await asyncio.sleep(wait)
+                continue
+            raise last_error
+        except aiohttp.ClientError as e:
+            last_error = e
+            if attempt < MAX_RETRIES:
+                wait = 2 ** attempt
+                print(f"[AIChat] 网络错误 {e}, 第 {attempt+1} 次重试 (等待 {wait}s)")
+                await asyncio.sleep(wait)
+                continue
+            raise
+
+    raise last_error or Exception("API 调用失败")
 
 
 async def handle_aichat(message, bot):
@@ -212,8 +305,10 @@ async def handle_aichat(message, bot):
             ".aichat <消息>  — 和 AI 对话\n"
             ".aichat clear   — 清空对话历史\n"
             ".aichat status  — 查看对话状态\n"
+            ".aichat stats   — 查看使用统计\n"
             "```\n"
-            "💡 对话历史在机器人运行期间一直保持，每个用户独立。"
+            "💡 对话历史在机器人运行期间一直保持，每个用户独立。\n"
+            "💡 AI 会感知当前频道名和最近对话内容。"
         )
         await message.reply(help_text)
         return True
@@ -229,12 +324,55 @@ async def handle_aichat(message, bot):
     if args.lower() in ("status", "状态"):
         conv = _conversations.get(message.author.id, [])
         msg_count = len([m for m in conv if m["role"] != "system"])
+        user_stats = _stats.get(message.author.id, {})
         await message.reply(
             f"📊 **AI 聊天状态**\n"
             f"对话消息数: {msg_count} / {MAX_HISTORY * 2}\n"
+            f"累计对话轮数: {user_stats.get('turns', 0)}\n"
+            f"累计 Token: {user_stats.get('total_tokens', 0)}\n"
             f"模型: {ZHIPU_MODEL}\n"
             f"上下文已加载: {'是' if _initialized else '否'}"
         )
+        return True
+
+    # .aichat stats — 查看使用统计
+    if args.lower() in ("stats", "统计"):
+        user_stats = _stats.get(message.author.id, {})
+        global_turns = sum(s["turns"] for s in _stats.values())
+        global_tokens = sum(s["total_tokens"] for s in _stats.values())
+        global_prompt = sum(s["prompt_tokens"] for s in _stats.values())
+        global_completion = sum(s["completion_tokens"] for s in _stats.values())
+        active_users = len(_stats)
+
+        if user_stats:
+            stats_text = (
+                f"📈 **AI 聊天统计**\n"
+                f"**你的统计:**\n"
+                f"  对话轮数: {user_stats['turns']}\n"
+                f"  Token 消耗: {user_stats['total_tokens']}\n"
+                f"  ├─ 输入 (prompt): {user_stats['prompt_tokens']}\n"
+                f"  └─ 输出 (completion): {user_stats['completion_tokens']}\n"
+                f"  首次使用: {user_stats.get('first_used', '未知')}\n"
+                f"  最后使用: {user_stats.get('last_used', '未知')}\n"
+                f"**全局统计:**\n"
+                f"  活跃用户: {active_users}\n"
+                f"  总对话轮数: {global_turns}\n"
+                f"  总 Token: {global_tokens}\n"
+                f"  ├─ 输入: {global_prompt}\n"
+                f"  └─ 输出: {global_completion}"
+            )
+        else:
+            stats_text = (
+                f"📈 **AI 聊天统计**\n"
+                f"你还没有使用过 AI 聊天。\n"
+                f"**全局统计:**\n"
+                f"  活跃用户: {active_users}\n"
+                f"  总对话轮数: {global_turns}\n"
+                f"  总 Token: {global_tokens}\n"
+                f"  ├─ 输入: {global_prompt}\n"
+                f"  └─ 输出: {global_completion}"
+            )
+        await message.reply(stats_text)
         return True
 
     # .aichat <消息> — 正常对话
@@ -245,15 +383,26 @@ async def handle_aichat(message, bot):
     # 添加用户消息
     conv.append({"role": "user", "content": args})
 
+    # 获取动态上下文 (当前频道名 + 最近消息摘要)
+    dynamic_ctx = await _get_dynamic_context(message, bot)
+
+    # 构建发送给 API 的消息列表 (在最后一条 user 消息前插入动态上下文)
+    messages_to_send = list(conv)
+    if dynamic_ctx:
+        messages_to_send.insert(-1, {"role": "system", "content": dynamic_ctx})
+
     # 显示"正在思考"提示
     thinking = await message.reply("🤔 正在思考...")
 
     try:
-        reply = await _call_zhipu_api(conv)
+        reply, usage = await _call_zhipu_api(messages_to_send)
 
         # 添加助手回复到历史
         conv.append({"role": "assistant", "content": reply})
         _trim_conversation(user_id)
+
+        # 更新统计
+        _update_stats(user_id, usage)
 
         # Discord 消息长度限制 2000
         if len(reply) > 1950:
@@ -266,7 +415,7 @@ async def handle_aichat(message, bot):
             await thinking.edit(content=reply)
 
     except asyncio.TimeoutError:
-        await thinking.edit(content="⏱️ AI 回复超时，请稍后再试。")
+        await thinking.edit(content="⏱️ AI 回复超时，已重试但仍未成功，请稍后再试。")
     except Exception as e:
         await thinking.edit(content=f"❌ AI 回复失败: {e}")
         # 移除刚才添加的用户消息 (因为没得到回复)
