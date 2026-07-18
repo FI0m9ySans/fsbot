@@ -1,6 +1,7 @@
 # 敏感文件
 token.txt
 .env
+ai_key.txt
 
 # 数据库
 *.db

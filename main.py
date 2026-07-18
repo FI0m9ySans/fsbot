@@ -24,6 +24,7 @@ import music_bot
 import cross_guild
 import deltarune_quiz
 import board_games
+import ai_chat
 
 
 # ── Cog 导入 ──
@@ -159,6 +160,12 @@ async def on_ready():
         board_games.register_board_games(bot, add_points_cb=add_points)
     except Exception as e:
         print(f"[Main] 棋盘游戏模块初始化失败: {e}")
+
+    # ── AI 聊天初始化 ──
+    try:
+        await ai_chat.init_ai_chat(bot)
+    except Exception as e:
+        print(f"[Main] AI 聊天模块初始化失败: {e}")
 
     # 所有命令注册完毕，最后才同步到 Discord
     if not hasattr(bot, '_synced'):
@@ -307,7 +314,13 @@ converter_s2t = opencc.OpenCC('s2t')
 async def on_message(message):
     if message.author.bot:
         return
-    
+
+    # AI 聊天 (.aichat)
+    if message.content.strip().startswith(".aichat"):
+        handled = await ai_chat.handle_aichat(message, bot)
+        if handled:
+            return
+
     CHINESE_MSG_ID = 1516904688572825791
     TRAD_CHINESE_MSG_ID = 1517123618461712444
     
