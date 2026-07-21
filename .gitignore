@@ -2,6 +2,7 @@
 token.txt
 .env
 ai_key.txt
+img_key.txt
 
 # 数据库
 *.db

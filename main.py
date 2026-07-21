@@ -25,6 +25,7 @@ import cross_guild
 import deltarune_quiz
 import board_games
 import ai_chat
+import ai_image
 
 
 # ── Cog 导入 ──
@@ -166,6 +167,12 @@ async def on_ready():
         await ai_chat.init_ai_chat(bot)
     except Exception as e:
         print(f"[Main] AI 聊天模块初始化失败: {e}")
+
+    # ── AI 图像生成初始化 ──
+    try:
+        await ai_image.init_image_gen(bot)
+    except Exception as e:
+        print(f"[Main] AI 图像生成模块初始化失败: {e}")
 
     # 所有命令注册完毕，最后才同步到 Discord
     if not hasattr(bot, '_synced'):
@@ -318,6 +325,12 @@ async def on_message(message):
     # AI 聊天 (.aichat)
     if message.content.strip().startswith(".aichat"):
         handled = await ai_chat.handle_aichat(message, bot)
+        if handled:
+            return
+
+    # AI 图像生成 (.draw / .outpaint)
+    if message.content.strip().lower().startswith((".draw", ".outpaint")):
+        handled = await ai_image.handle_draw(message, bot)
         if handled:
             return
 

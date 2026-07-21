@@ -15,6 +15,19 @@ import sqlite3
 import datetime
 import discord
 
+# 延迟导入避免循环依赖
+_ai_image = None
+
+def _get_ai_image():
+    global _ai_image
+    if _ai_image is None:
+        try:
+            import ai_image
+            _ai_image = ai_image
+        except ImportError:
+            pass
+    return _ai_image
+
 # ── 智谱AI 配置 ──
 ZHIPU_API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 ZHIPU_MODEL = "glm-4-flash"
@@ -128,6 +141,9 @@ def _build_system_context(bot) -> str:
     lines.append("- 如果需要查看某个网页来回答问题, 请用 [browse:URL] 格式 (如 [browse:https://example.com])")
     lines.append("- 系统会自动抓取网页内容并让你基于内容回答, 每次最多查看3个网页")
     lines.append("- [browse:URL] 标记不会被用户看到, 请在标记后或同一回复中使用它")
+    lines.append("- 如果用户要求画图/生成图片, 请用 [image:中文描述] 格式 (如 [image:一只可爱的橘猫在窗台上晒太阳，写实风格])")
+    lines.append("- 系统会自动调用 CogView-3-Flash 生成图片并发送, 图片标记不会被用户看到")
+    lines.append("- 在同一回复中使用多个 [image:...] 标记可生成多张图片 (最多3张)")
 
     return "\n".join(lines)
 
@@ -554,6 +570,18 @@ async def handle_aichat(message, bot):
         # 解析 [@用户名] 标记为 Discord mention
         reply, allowed_mentions = await _resolve_mentions(reply, message)
 
+        # ── 检测 [image:描述] 标记, 生成图片 ──
+        ai_image_mod = _get_ai_image()
+        if ai_image_mod:
+            img_result = await ai_image_mod.handle_image_tag(message, bot, reply)
+            if img_result:
+                reply = img_result["text"]
+                images = img_result["images"]
+            else:
+                images = []
+        else:
+            images = []
+
         # Discord 消息长度限制 2000
         if len(reply) > 1950:
             # 分段发送
@@ -563,6 +591,16 @@ async def handle_aichat(message, bot):
                 await message.channel.send(part, allowed_mentions=allowed_mentions)
         else:
             await thinking.edit(content=reply, allowed_mentions=allowed_mentions)
+
+        # ── 发送生成的图片 ──
+        for img in images:
+            embed = discord.Embed(color=discord.Color.blue())
+            embed.set_image(url=img["url"])
+            embed.set_footer(text=f"CogView-3-Flash | {img['prompt'][:80]}")
+            try:
+                await message.channel.send(embed=embed)
+            except Exception:
+                await message.channel.send(img["url"])
 
     except asyncio.TimeoutError:
         await thinking.edit(content="⏱️ AI 回复超时，已重试但仍未成功，请稍后再试。")
