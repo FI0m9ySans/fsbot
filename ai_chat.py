@@ -125,6 +125,9 @@ def _build_system_context(bot) -> str:
     lines.append("- 不要编造不存在的命令或功能")
     lines.append("- 如果用户要求你艾特/提及(@)某人, 请用 [@用户名] 格式 (如 [@花衫]), 系统会自动解析为 Discord 艾特")
     lines.append("- 用户名应使用该用户的昵称或用户名, 系统会精确匹配后再模糊匹配")
+    lines.append("- 如果需要查看某个网页来回答问题, 请用 [browse:URL] 格式 (如 [browse:https://example.com])")
+    lines.append("- 系统会自动抓取网页内容并让你基于内容回答, 每次最多查看3个网页")
+    lines.append("- [browse:URL] 标记不会被用户看到, 请在标记后或同一回复中使用它")
 
     return "\n".join(lines)
 
@@ -343,6 +346,52 @@ async def _resolve_mentions(reply: str, message) -> tuple:
     return reply, None
 
 
+# ── 网页浏览 ──
+_BROWSE_PATTERN = re.compile(r'\[browse:(https?://[^\]\s]+)\]')
+_WEBPAGE_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+
+async def _fetch_webpage(url: str, max_chars: int = 3000) -> str:
+    """抓取网页内容, 提取纯文本 (去标签/脚本/样式)"""
+    headers = {"User-Agent": _WEBPAGE_UA}
+    timeout = aiohttp.ClientTimeout(total=15)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url, headers=headers, ssl=False) as resp:
+            if resp.status != 200:
+                return f"(HTTP {resp.status})"
+            # 尝试检测编码
+            raw = await resp.read()
+            encoding = "utf-8"
+            try:
+                ct = resp.headers.get("Content-Type", "")
+                if "charset=" in ct:
+                    encoding = ct.split("charset=")[-1].split(";")[0].strip()
+            except Exception:
+                pass
+            html = raw.decode(encoding, errors="ignore")
+
+    # 去 script / style / noscript
+    html = re.sub(r'<(script|style|noscript)[^>]*>.*?</\1>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    # 去 HTML 注释
+    html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
+    # 提取 <title>
+    title_match = re.search(r'<title[^>]*>(.*?)</title>', html, re.IGNORECASE | re.DOTALL)
+    title = title_match.group(1).strip() if title_match else ""
+    # 去 HTML 标签
+    text = re.sub(r'<[^>]+>', ' ', html)
+    # HTML 实体
+    for entity, char in [("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"),
+                         ("&gt;", ">"), ("&quot;", '"'), ("&#39;", "'")]:
+        text = text.replace(entity, char)
+    # 压缩空白
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    if title:
+        text = f"标题: {title}\n\n{text}"
+    if len(text) > max_chars:
+        text = text[:max_chars] + "...(内容已截断)"
+    return text
+
+
 async def handle_aichat(message, bot):
     """
     处理 .aichat 命令
@@ -376,7 +425,8 @@ async def handle_aichat(message, bot):
             ".aichat stats   — 查看使用统计\n"
             "```\n"
             "💡 对话历史在机器人运行期间一直保持，每个用户独立。\n"
-            "💡 AI 会感知当前频道名和最近对话内容。"
+            "💡 AI 会感知当前频道名和最近对话内容。\n"
+            "💡 AI 可以自主查看网页：问它「看看 xxx.com 说了什么」即可。"
         )
         await message.reply(help_text)
         return True
@@ -465,7 +515,36 @@ async def handle_aichat(message, bot):
     try:
         reply, usage = await _call_zhipu_api(messages_to_send)
 
-        # 添加助手回复到历史
+        # ── 检测 [browse:URL] 标记, 如有则抓取网页并二次调用 ──
+        browse_urls = _BROWSE_PATTERN.findall(reply)
+        if browse_urls:
+            await thinking.edit(content="🌐 正在查看网页...")
+
+            # 抓取网页 (最多3个)
+            web_parts = []
+            for url in browse_urls[:3]:
+                try:
+                    content = await _fetch_webpage(url)
+                    web_parts.append(f"[网页 {url}]\n{content}")
+                except asyncio.TimeoutError:
+                    web_parts.append(f"[网页 {url}] 抓取超时")
+                except Exception as e:
+                    web_parts.append(f"[网页 {url}] 抓取失败: {e}")
+
+            web_context = "\n\n---\n\n".join(web_parts)
+
+            # 构建二次调用的消息: 原对话 + AI首次回复(含browse标记) + 网页内容
+            second_messages = list(conv)
+            second_messages.append({"role": "assistant", "content": reply})
+            second_messages.append({
+                "role": "user",
+                "content": f"[系统] 以下是你请求查看的网页内容:\n\n{web_context}\n\n请根据以上网页内容回答我之前的问题。"
+            })
+
+            # 二次调用 (不再检测 browse, 防止无限循环)
+            reply, usage = await _call_zhipu_api(second_messages)
+
+        # 添加最终助手回复到历史
         conv.append({"role": "assistant", "content": reply})
         _trim_conversation(user_id)
 
