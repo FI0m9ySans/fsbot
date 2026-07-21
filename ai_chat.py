@@ -10,8 +10,10 @@ import asyncio
 import aiohttp
 import json
 import os
+import re
 import sqlite3
 import datetime
+import discord
 
 # ── 智谱AI 配置 ──
 ZHIPU_API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
@@ -121,6 +123,8 @@ def _build_system_context(bot) -> str:
     lines.append("- 回答用户关于机器人功能的问题时, 请给出具体命令")
     lines.append("- 如果用户问的超出机器人功能范围, 可以正常聊天但提醒这是机器人助手")
     lines.append("- 不要编造不存在的命令或功能")
+    lines.append("- 如果用户要求你艾特/提及(@)某人, 请用 [@用户名] 格式 (如 [@花衫]), 系统会自动解析为 Discord 艾特")
+    lines.append("- 用户名应使用该用户的昵称或用户名, 系统会精确匹配后再模糊匹配")
 
     return "\n".join(lines)
 
@@ -275,6 +279,70 @@ async def _call_zhipu_api(messages: list) -> tuple:
     raise last_error or Exception("API 调用失败")
 
 
+# ── @mention 解析 ──
+_MENTION_PATTERN = re.compile(r'\[@(.*?)\]')
+
+async def _resolve_mentions(reply: str, message) -> tuple:
+    """
+    解析 AI 回复中的 [@用户名] 标记, 匹配 Discord 用户并替换为 <@ID>
+    返回 (处理后的文本, AllowedMentions 或 None)
+    匹配优先级: display_name 精确 → name 精确 → nick 精确 → display_name 模糊 → name 模糊
+    """
+    matches = _MENTION_PATTERN.findall(reply)
+    if not matches:
+        return reply, None
+
+    guild = message.guild
+    if not guild or not guild.members:
+        return reply, None
+
+    matched_users = []
+    resolved = {}  # {name_lower: member}
+
+    for raw_name in matches:
+        name = raw_name.strip()
+        name_lower = name.lower()
+
+        if name_lower in resolved:
+            continue
+
+        found = None
+        # 第一轮: 精确匹配
+        for m in guild.members:
+            if (m.display_name.lower() == name_lower or
+                m.name.lower() == name_lower or
+                (m.nick and m.nick.lower() == name_lower)):
+                found = m
+                break
+
+        # 第二轮: 模糊匹配 (包含)
+        if not found:
+            for m in guild.members:
+                if (name_lower in m.display_name.lower() or
+                    name_lower in m.name.lower()):
+                    found = m
+                    break
+
+        if found:
+            resolved[name_lower] = found
+            if found not in matched_users:
+                matched_users.append(found)
+
+    # 替换文本
+    for name_lower, member in resolved.items():
+        # 找到原始大小写的 name 来替换
+        for raw_name in matches:
+            if raw_name.strip().lower() == name_lower:
+                reply = reply.replace(f"[@{raw_name}]", f"<@{member.id}>")
+                break
+
+    if matched_users:
+        allowed = discord.AllowedMentions(users=matched_users)
+        return reply, allowed
+
+    return reply, None
+
+
 async def handle_aichat(message, bot):
     """
     处理 .aichat 命令
@@ -404,15 +472,18 @@ async def handle_aichat(message, bot):
         # 更新统计
         _update_stats(user_id, usage)
 
+        # 解析 [@用户名] 标记为 Discord mention
+        reply, allowed_mentions = await _resolve_mentions(reply, message)
+
         # Discord 消息长度限制 2000
         if len(reply) > 1950:
             # 分段发送
             parts = [reply[i:i+1950] for i in range(0, len(reply), 1950)]
-            await thinking.edit(content=parts[0])
+            await thinking.edit(content=parts[0], allowed_mentions=allowed_mentions)
             for part in parts[1:]:
-                await message.channel.send(part)
+                await message.channel.send(part, allowed_mentions=allowed_mentions)
         else:
-            await thinking.edit(content=reply)
+            await thinking.edit(content=reply, allowed_mentions=allowed_mentions)
 
     except asyncio.TimeoutError:
         await thinking.edit(content="⏱️ AI 回复超时，已重试但仍未成功，请稍后再试。")
